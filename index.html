@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coordination Rules</title>
+<link rel="stylesheet" href="styles.css?v=machine-context-v22">
+</head>
+<body>
+<div class="onboarding-screen" id="tutorial-screen" hidden>
+  <main class="onboarding-shell" aria-labelledby="tutorial-title">
+    <header class="onboarding-header">
+      <div>
+        <div class="onboarding-kicker">Tutorial</div>
+        <h1 id="tutorial-title">Coordination Rules</h1>
+      </div>
+      <div class="onboarding-progress" aria-live="polite">
+        <span id="tut-progress-label">1 of 5</span>
+        <div class="onboarding-progress-track" aria-hidden="true">
+          <span id="tut-progress-bar"></span>
+        </div>
+      </div>
+    </header>
+
+    <div class="tut-body">
+      <div class="tut-copy">
+        <h2 id="tut-title"></h2>
+        <p class="tut-lead" id="tut-lead"></p>
+        <ul class="tut-points" id="tut-points"></ul>
+      </div>
+
+      <div class="tut-panel">
+        <div class="tut-visual" id="tut-visual">
+          <div class="tut-board-frame" id="tut-board-frame">
+            <div class="board tut-board" id="tut-board"></div>
+          </div>
+          <div class="tut-feedback" id="tut-feedback"></div>
+          <div class="tut-controls" id="tut-controls">
+            <button class="btn primary" id="tut-run" type="button">Run</button>
+            <div class="step-nav">
+              <button class="btn step-button" id="tut-prev" type="button" aria-label="Previous step">←</button>
+              <span class="step-label" id="tut-step-label">Step 0 / 0</span>
+              <button class="btn step-button" id="tut-next-step" type="button" aria-label="Next step">→</button>
+            </div>
+            <button class="btn text-button" id="tut-reset" type="button">Reset</button>
+          </div>
+        </div>
+        <div class="tut-rule-reference" id="tut-rule-reference" hidden></div>
+      </div>
+    </div>
+
+    <footer class="onboarding-footer">
+      <button class="tutorial-nav-button secondary" id="tut-back" type="button" disabled>Back</button>
+      <div class="onboarding-step-dots" id="tut-dots" aria-hidden="true"></div>
+      <button class="tutorial-nav-button primary" id="tut-continue" type="button">Continue</button>
+    </footer>
+  </main>
+</div>
+
+<div class="wrap">
+  <div class="taskbar">
+    <div class="taskbar-head">
+      <div class="case-summary" id="case-summary"></div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+  </div>
+
+  <div class="main">
+    <section class="scene-panel" aria-label="Current scene">
+      <div class="section-heading scene-heading">
+        <div class="scene-heading-actions">
+          <button class="guide-button" id="scene-guide" type="button" hidden>Guide</button>
+        </div>
+      </div>
+      <div class="scene-goal" id="scene-goal" aria-labelledby="scene-goal-title">
+        <div class="scene-goal-heading">
+          <strong id="scene-goal-title">Goals</strong>
+        </div>
+        <div class="scene-goal-list" id="scene-goal-list"></div>
+      </div>
+      <div class="scene-visual">
+        <div class="board-frame">
+          <div class="board" id="board"></div>
+        </div>
+        <section class="legend" id="legend" aria-label="Map key and guide"></section>
+      </div>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+      <div class="agent-panel" id="agent-progress"></div>
+      <div class="scene-bottom-controls">
+        <div class="controls scene-run-controls">
+          <button class="btn primary" id="run">Run</button>
+          <div class="step-nav" aria-label="Animation step controls">
+            <button class="btn step-button" id="prev" aria-label="Previous step" title="Previous step">←</button>
+            <span class="step-label" id="step-label">Step 0 / 0</span>
+            <button class="btn step-button" id="next" aria-label="Next step" title="Next step">→</button>
+          </div>
+          <button class="btn text-button" id="reset">Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="rules-panel" aria-labelledby="rules-panel-title">
+      <div class="section-heading rules-heading">
+        <div>
+          <h2 id="rules-panel-title">Rules</h2>
+        </div>
+        <span class="rule-count" id="rule-count">0 rules</span>
+      </div>
+      <div class="rulebook-actions">
+        <button class="btn add-rule-button" id="addrule">Add Rule</button>
+      </div>
+      <div id="rules"></div>
+      <section class="library-panel" aria-labelledby="library-title">
+        <div class="library-heading">
+          <div>
+            <h3 id="library-title">Saved rule library</h3>
+          </div>
+          <span class="rule-count" id="library-count">0 saved</span>
+        </div>
+        <div id="library"></div>
+      </section>
+      <div class="researcher-panel" id="researcher-panel" hidden>
+        <p class="vocab" id="vocab"></p>
+        <div class="log" id="log"></div>
+        <div class="controls export-controls">
+          <button class="btn" id="export-json">Export JSON</button>
+          <button class="btn" id="export-csv">Export CSV</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div class="guide-backdrop" id="guide-backdrop" hidden>
+  <section class="guide-dialog" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+    <div class="guide-kicker" id="guide-kicker">Scene guide</div>
+    <h2 id="guide-title"></h2>
+    <div class="guide-items" id="guide-items"></div>
+    <p id="guide-body"></p>
+    <div class="guide-example" id="guide-example"></div>
+    <button class="btn primary guide-close" id="guide-close" type="button">Continue to scene</button>
+  </section>
+</div>
+
+<div class="notice-backdrop" id="notice-backdrop" hidden>
+  <section class="notice-dialog" role="dialog" aria-modal="true" aria-labelledby="notice-title">
+    <h2 id="notice-title">Rule not ready</h2>
+    <p id="notice-message"></p>
+    <button class="btn primary notice-close" id="notice-close" type="button">OK</button>
+  </section>
+</div>
+
+<script src="data/tasks.generated.js?v=machine-context-v22"></script>
+<script src="engine.js?v=machine-context-v22"></script>
+<script src="tutorial.js?v=machine-context-v22"></script>
+<script src="app.js?v=machine-context-v22"></script>
+</body>
+</html>
