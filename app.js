@@ -135,6 +135,18 @@ function roleIconName(role){
   return "robot";
 }
 
+function agentDisplayId(id){
+  const value = Number(id);
+  if(!Number.isInteger(value) || value < 0) return String(id);
+  let label = "";
+  let index = value;
+  do{
+    label = String.fromCharCode(65 + (index % 26)) + label;
+    index = Math.floor(index / 26) - 1;
+  }while(index >= 0);
+  return label;
+}
+
 function carryIcon(agent){
   return agent.carrying === "spill" ? icon("spill", "carry-icon") : "";
 }
@@ -199,11 +211,11 @@ function zoneMarkup(zone){
 
 function targetMarkup(agent, targetIndex=0, onMachine=false){
   const corner = targetIndex % 4;
-  return `<span class="target-label target-label-corner-${corner}${onMachine ? ` target-label-on-machine target-label-machine-${corner}` : ""}">${agent.id}</span>`;
+  return `<span class="target-label target-label-corner-${corner}${onMachine ? ` target-label-on-machine target-label-machine-${corner}` : ""}">${agentDisplayId(agent.id)}</span>`;
 }
 
 function agentAvatar(agent, extraClass=""){
-  return `<span class="agent-avatar ${extraClass}" style="--agent-color:${agentColor(agent)}">${icon(roleIconName(agent.role), "agent-avatar-icon")}<span class="agent-avatar-id">${agent.id}</span></span>`;
+  return `<span class="agent-avatar ${extraClass}" style="--agent-color:${agentColor(agent)}">${icon(roleIconName(agent.role), "agent-avatar-icon")}<span class="agent-avatar-id">${agentDisplayId(agent.id)}</span></span>`;
 }
 
 function spillIconBadge(agent, className=""){
@@ -214,7 +226,7 @@ function spillIconBadge(agent, className=""){
 function robotMarkup(agent, meta){
   return [
     icon(roleIconName(agent.role), "robot-role"),
-    `<span class="robot-id">${agent.id}</span>`,
+    `<span class="robot-id">${agentDisplayId(agent.id)}</span>`,
     carryIcon(agent),
     meta?.done ? icon("done", "robot-state-mark") : "",
     meta?.failed ? icon("failed", "robot-state-mark") : "",
@@ -378,10 +390,10 @@ function sceneFullMapMarkup(task){
         : "";
       const itemMarkup = items.map(item => `<span class="picker-item item-${item.colour}" aria-hidden="true"></span>`).join("");
       const targetMarkup = (targets.get(key) || []).map((agent, targetIndex) =>
-        `<span class="picker-target picker-target-${targetIndex % 4}${machines.has(key) ? ` picker-target-on-machine picker-target-on-machine-${targetIndex % 4}` : ""}" style="--agent-color:${agentColor(agent)}" aria-hidden="true"><span class="picker-target-label picker-target-label-${targetIndex % 4}">${agent.id}</span></span>`
+        `<span class="picker-target picker-target-${targetIndex % 4}${machines.has(key) ? ` picker-target-on-machine picker-target-on-machine-${targetIndex % 4}` : ""}" style="--agent-color:${agentColor(agent)}" aria-hidden="true"><span class="picker-target-label picker-target-label-${targetIndex % 4}">${agentDisplayId(agent.id)}</span></span>`
       ).join("");
       const agentMarkup = agents.map((agent, agentIndex) =>
-        `<span class="picker-agent ${agents.length > 1 ? "picker-agent-multi" : ""} picker-agent-index-${agentIndex}" style="--agent-color:${agentColor(agent)}" aria-hidden="true">${icon(roleIconName(agent.role), "picker-agent-icon")}<span class="picker-agent-id">${agent.id}</span>${agent.goal?.kind === "operate" ? icon("machine", "picker-goal-badge") : ""}${agent.carrying === "spill" ? icon("spill", "picker-carry-icon") : ""}</span>`
+        `<span class="picker-agent ${agents.length > 1 ? "picker-agent-multi" : ""} picker-agent-index-${agentIndex}" style="--agent-color:${agentColor(agent)}" aria-hidden="true">${icon(roleIconName(agent.role), "picker-agent-icon")}<span class="picker-agent-id">${agentDisplayId(agent.id)}</span>${agent.goal?.kind === "operate" ? icon("machine", "picker-goal-badge") : ""}${agent.carrying === "spill" ? icon("spill", "picker-carry-icon") : ""}</span>`
       ).join("");
       const zoneMarkupText = !wall && zone === "cold" ? zoneMarkup("cold") : "";
       cells.push(`<span class="picker-map-cell ${wall ? "picker-map-wall" : `picker-map-${zone}`}" aria-hidden="true">${wall ? "" : zoneMarkupText + feature + itemMarkup + targetMarkup + agentMarkup}</span>`);
@@ -536,7 +548,7 @@ function buildTabs(){
 function renderSceneGoal(){
   const list = $("scene-goal-list");
   if(!list) return;
-  list.innerHTML = '<div class="goal-instruction">Move each robot to the destination with the same number.</div>';
+  list.innerHTML = '<div class="goal-instruction">Move each robot to the destination with the same letter.</div>';
 }
 
 function buildBoard(){
@@ -625,9 +637,9 @@ function buildBoard(){
     const machineEl = machineEls[machine.id];
     if(!machineEl || !assigned.length) return;
     const labels = assigned.map(agent =>
-      `<span style="--agent-color:${agentColor(agent)}">${agent.id}</span>`
+      `<span style="--agent-color:${agentColor(agent)}">${agentDisplayId(agent.id)}</span>`
     ).join("");
-    machineEl.insertAdjacentHTML("beforeend", `<span class="machine-goal-ids" aria-label="Target for robots ${assigned.map(agent => agent.id).join(" and ")}">${labels}</span>`);
+    machineEl.insertAdjacentHTML("beforeend", `<span class="machine-goal-ids" aria-label="Target for robots ${assigned.map(agent => agentDisplayId(agent.id)).join(" and ")}">${labels}</span>`);
   });
 
   activeAgents.forEach(agent => {
@@ -650,7 +662,7 @@ function buildBoard(){
     if(targetIsMachine){
       ring.classList.add("machine-target-ring");
     }
-    ring.setAttribute("aria-label", `Robot ${agent.id} target: ${goalLabel(agent)}`);
+    ring.setAttribute("aria-label", `Robot ${agentDisplayId(agent.id)} target: ${goalLabel(agent)}`);
     ring.innerHTML = targetMarkup(agent, targetIndex, targetIsMachine);
     board.appendChild(ring);
   });
@@ -662,7 +674,7 @@ function buildBoard(){
     robot.style.width = robotSize + "px";
     robot.style.height = robotSize + "px";
     robot.style.background = agentColor(agent);
-    robot.setAttribute("aria-label", agent.active ? `Robot ${agent.id}` : `Robot ${agent.id}: off duty`);
+    robot.setAttribute("aria-label", agent.active ? `Robot ${agentDisplayId(agent.id)}` : `Robot ${agentDisplayId(agent.id)}: off duty`);
     robot.innerHTML = robotMarkup(agent, null);
     board.appendChild(robot);
     robotEls[agent.id] = robot;
@@ -767,7 +779,7 @@ function renderFrame(frame){
     el.classList.toggle("off-duty", !!meta?.offDuty);
     el.classList.toggle("waiting", !!meta?.waiting);
     el.classList.toggle("failed", !!meta?.failed);
-    el.setAttribute("aria-label", `Robot ${agent.id}: ${stateText(meta)}`);
+    el.setAttribute("aria-label", `Robot ${agentDisplayId(agent.id)}: ${stateText(meta)}`);
     el.innerHTML = robotMarkup(agent, meta);
     if(agent.goal?.kind === "operate"){
       if(released){
@@ -1376,7 +1388,7 @@ function feedbackCellType(cell){
 }
 
 function feedbackAgent(id){
-  return `Robot ${id}`;
+  return `Robot ${agentDisplayId(id)}`;
 }
 
 function lastWaitingFrame(result){
@@ -1402,13 +1414,13 @@ function buildRunFeedback(result){
     });
     return {
       title:"That worked!",
-      observation:`Every robot reached its destination in ${step} steps${waits.size ? `. Your rule asked ${[...waits].map(id => `Robot ${id}`).join(" and ")} to wait at the right moment` : ""}.`,
+      observation:`Every robot reached its destination in ${step} steps${waits.size ? `. Your rule asked ${[...waits].map(id => feedbackAgent(id)).join(" and ")} to wait at the right moment` : ""}.`,
       kind:"ok",
     };
   }
 
   if(result.reason?.startsWith("pollution:")){
-    const robotNames = ids.map(id => `Robot ${id}`).join(" and ");
+    const robotNames = ids.map(id => feedbackAgent(id)).join(" and ");
     return {
       title:"Something went wrong",
       observation:`At step ${step}, ${robotNames} carried a spill into the ${square}, so that area was contaminated. Use the step buttons to look back at the move.`,

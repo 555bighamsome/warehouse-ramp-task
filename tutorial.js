@@ -31,6 +31,18 @@ const state = {
   reuseSolved:false,
 };
 
+function agentDisplayId(id){
+  const value = Number(id);
+  if(!Number.isInteger(value) || value < 0) return String(id);
+  let label = "";
+  let index = value;
+  do{
+    label = String.fromCharCode(65 + (index % 26)) + label;
+    index = Math.floor(index / 26) - 1;
+  }while(index >= 0);
+  return label;
+}
+
 function makeScene(id, walls, agents){
   return normalizeTask({
     id,
@@ -107,20 +119,20 @@ const ALL_PAGES = [
     title:"Read the map",
     lead:"Your task is to write shared rules that let every active robot complete its target without causing a failure.",
     points:[
-      "A robot and its target have the same number and colour.",
+      "A robot and its target have the same letter and colour.",
       "A target is shown as a dashed square.",
       "Robots may enter available squares but cannot enter walls.",
-      "Numbers and colours only match robots to targets; they do not give priority.",
+      "Letters and colours only match robots to targets; they do not give priority.",
     ],
     scene:MOVEMENT_SCENE,
     controls:false,
     reference:"map",
-    initialNote:"Robot 0 and its dashed target use the same number and colour.",
+    initialNote:"Robot A and its dashed target use the same letter and colour.",
   },
   {
     id:"movement",
     title:"How robots move",
-    lead:"Press Run to watch Robot 0 plan a route around the wall and reach its target.",
+    lead:"Press Run to watch Robot A plan a route around the wall and reach its target.",
     points:[
       "A robot moves one square during each time step.",
       "It chooses the shortest legal route. If routes are equally short, it prefers fewer turns.",
@@ -222,7 +234,7 @@ function drawBoard(host, scene, frame=null){
     ring.style.height = `${CELL - 4}px`;
     ring.style.borderColor = COL[agent.id % COL.length];
     ring.style.setProperty("--agent-color", COL[agent.id % COL.length]);
-    ring.innerHTML = `<span class="target-label target-label-corner-0">${agent.id}</span>`;
+    ring.innerHTML = `<span class="target-label target-label-corner-0">${agentDisplayId(agent.id)}</span>`;
     host.appendChild(ring);
   });
 
@@ -239,7 +251,7 @@ function drawBoard(host, scene, frame=null){
     robot.style.height = `${CELL - 14}px`;
     robot.style.background = COL[agent.id % COL.length];
     robot.innerHTML = icon("carrier", "robot-role") +
-      `<span class="robot-id">${agent.id}</span>` +
+      `<span class="robot-id">${agentDisplayId(agent.id)}</span>` +
       (meta.failed ? icon("failed", "robot-state-mark") : "") +
       (meta.done ? icon("done", "robot-state-mark") : "");
     host.appendChild(robot);
@@ -313,7 +325,7 @@ function feedbackEntry(result){
   }
   if(result.reason === "collision"){
     const event = result.frames[result.frames.length - 1]?.event;
-    const names = (event?.agents || []).map(id => `Robot ${id}`).join(" and ");
+    const names = (event?.agents || []).map(id => `Robot ${agentDisplayId(id)}`).join(" and ");
     return {
       kind:"bad",
       title:"They met at the same time",
@@ -324,7 +336,7 @@ function feedbackEntry(result){
     return {
       kind:"bad",
       title:"Almost there",
-      text:"Robot 0 entered the marked square. Add a rule that asks it to wait before that move, then try again.",
+      text:"Robot A entered the marked square. Add a rule that asks it to wait before that move, then try again.",
     };
   }
   return {
@@ -423,12 +435,12 @@ function mapReferenceMarkup(){
   return `
     <div class="tut-map-key" aria-label="Basic map elements">
       <div>
-        <span class="tut-key-robot">${icon("carrier", "robot-role")}<small>0</small></span>
-        <span><strong>Robot 0</strong><small>An active robot.</small></span>
+        <span class="tut-key-robot">${icon("carrier", "robot-role")}<small>A</small></span>
+        <span><strong>Robot A</strong><small>An active robot.</small></span>
       </div>
       <div>
-        <span class="tut-key-target"><small>0</small></span>
-        <span><strong>Target 0</strong><small>Robot 0's destination.</small></span>
+        <span class="tut-key-target"><small>A</small></span>
+        <span><strong>Target A</strong><small>Robot A's destination.</small></span>
       </div>
       <div>
         <span class="tut-key-floor">${icon("floor")}</span>
