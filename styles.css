@@ -868,9 +868,14 @@ button.btn.primary:hover{background:#444;border-color:#444;}
 /* Map symbols: each environment element has one shape and one label. */
 .cell.zone-cold{background:#edf4f7;}
 .cell.wall{
-  background:#e7ebee;
+  background-color:#1b2521;
+  background-image:url("assets/brick-wall-tile.png");
+  background-position:center;
+  background-size:100% 100%;
+  background-repeat:repeat;
+  image-rendering:pixelated;
   border:0;
-  color:#56616a;
+  color:#fff;
 }
 .machine{border-radius:0;background:#e9e5dc;border-color:#444;color:#222;}
 .scanner{border-radius:0;background:#f5f5f5;border-color:#444;color:#222;}
@@ -882,8 +887,13 @@ button.btn.primary:hover{background:#444;border-color:#444;}
 .legend-target-sample{border-radius:0;}
 .floor-sample{color:#444;}
 .wall-sample{
-  background:#e7ebee;
-  color:#56616a;
+  background-color:#1b2521;
+  background-image:url("assets/brick-wall-tile.png");
+  background-position:center;
+  background-size:100% 100%;
+  background-repeat:repeat;
+  image-rendering:pixelated;
+  color:#fff;
 }
 .cold-sample{background:#edf4f7;color:#315d70;}
 .machine-sample{background:#e9e5dc;color:#222;}
