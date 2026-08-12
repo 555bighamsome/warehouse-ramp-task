@@ -1,13 +1,11 @@
 window.PARADIGM_LIBRARIES = {
   "ramp-carry": {
-    "experiment_version": 17,
+    "experiment_version": 16,
     "title": "Warehouse Right-of-Way",
     "objective": "Write rules that let every robot complete its assigned task safely.",
     "condition": "carry",
     "schedule": "ramp",
     "world_rules": [
-      "Rules are checked only when multiple robots try to enter the same square at the same time.",
-      "A robot that matches any rule waits for that time step.",
       "Some robots must leave through a marked exit; others enter a single-lane branch with near and far destinations.",
       "Robots choose their shortest legal route and move at the same time.",
       "An exit is a special map square that admits one robot at a time.",
@@ -16,14 +14,25 @@ window.PARADIGM_LIBRARIES = {
       "When two robots reach an exit together, one must wait before either robot enters.",
       "Only one of the two possible entry orders is accepted.",
       "After entering an exit, a robot leaves the work area.",
-      "All conditions within one rule must be true for that rule to apply."
+      "A rule applies to every robot in the current scene when all conditions are true."
     ],
     "rule_schema": {
       "action": {
         "id": "MOVE",
-        "label": "WAIT"
+        "label": "MOVE INTO A SQUARE"
       },
       "fields": [
+        {
+          "id": "contested",
+          "object": "Square being entered",
+          "predicate": "contested",
+          "values": [
+            {
+              "id": true,
+              "label": "being entered by multiple robots"
+            }
+          ]
+        },
         {
           "id": "target_type",
           "object": "Square being entered",
@@ -84,10 +93,18 @@ window.PARADIGM_LIBRARIES = {
     "global_actions": [
       {
         "id": "MOVE",
-        "label": "wait"
+        "label": "move into a square"
       }
     ],
     "global_vocabulary": [
+      {
+        "object": "Square being entered",
+        "property": "contested",
+        "predicate": "contested",
+        "value": true,
+        "negated": false,
+        "label": "being entered by multiple robots"
+      },
       {
         "object": "Square being entered",
         "property": "target_type",
@@ -157,6 +174,14 @@ window.PARADIGM_LIBRARIES = {
       "MOVE": [
         {
           "object": "Square being entered",
+          "property": "contested",
+          "predicate": "contested",
+          "value": true,
+          "negated": false,
+          "label": "being entered by multiple robots"
+        },
+        {
+          "object": "Square being entered",
           "property": "target_type",
           "predicate": "target_type",
           "value": "road",
@@ -222,22 +247,22 @@ window.PARADIGM_LIBRARIES = {
       ]
     },
     "ground_truth_design": {
-      "role_rule": "Carrier",
+      "role_rule": "contested + Carrier",
       "movement_minimum_primitives": [
-        1,
         2,
-        3,
         4,
         5,
-        6
+        6,
+        8,
+        9
       ],
       "role_minimum_primitives": [
-        1,
-        1,
-        1,
-        1,
-        1,
-        1
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
       ],
       "tree_stay_costs": [
         null,
@@ -263,9 +288,8 @@ window.PARADIGM_LIBRARIES = {
       "confirmatory_stimulus_ready": false,
       "primary_design_metric": "parameter_free_hierarchical_tree_distance",
       "schedule_contrast": "one_tree_edge_at_a_time_vs_four_edges_at_once",
-      "movement_anchor": "T1 begins with northbound",
-      "implicit_contested_gate": true,
-      "static_generation_model": "positive_only_hierarchical_grammar_v6",
+      "movement_anchor": "T1 begins with contested + northbound",
+      "static_generation_model": "positive_only_hierarchical_grammar_v5",
       "local_transition_model": "parameter_free_semantic_tree_v1",
       "negation_available": false
     },
@@ -276,86 +300,86 @@ window.PARADIGM_LIBRARIES = {
         "t1_wrong_type_reason": "lane-blocked",
         "t1_baseline_reason": "collision",
         "t1_movement_minimum_rules": 1,
-        "t1_movement_minimum_primitives": 1,
-        "t1_movement_static_bits": 5.915879,
-        "t1_movement_successful_mass": 0.0278474937,
-        "t1_movement_successful_mass_bits": 5.166309,
+        "t1_movement_minimum_primitives": 2,
+        "t1_movement_static_bits": 7.915879,
+        "t1_movement_successful_mass": 0.0061854681,
+        "t1_movement_successful_mass_bits": 7.336901,
         "t1_role_minimum_rules": 1,
-        "t1_role_minimum_primitives": 1,
-        "t1_role_static_bits": 4.915879,
-        "t1_role_successful_mass": 0.0490678589,
-        "t1_role_successful_mass_bits": 4.349078,
-        "t1_role_advantage_bits": 0.817231,
+        "t1_role_minimum_primitives": 2,
+        "t1_role_static_bits": 6.915879,
+        "t1_role_successful_mass": 0.0119804892,
+        "t1_role_successful_mass_bits": 6.383169,
+        "t1_role_advantage_bits": 0.953732,
         "t2_type": true,
         "t2_wrong_type_reason": "priority-violation",
         "t2_baseline_reason": "resource-conflict",
         "t2_movement_minimum_rules": 2,
-        "t2_movement_minimum_primitives": 2,
-        "t2_movement_static_bits": 10.23243,
-        "t2_movement_successful_mass": 0.0015714898,
-        "t2_movement_successful_mass_bits": 9.313651,
+        "t2_movement_minimum_primitives": 4,
+        "t2_movement_static_bits": 14.233279,
+        "t2_movement_successful_mass": 0.0001042802,
+        "t2_movement_successful_mass_bits": 13.227247,
         "t2_role_minimum_rules": 1,
-        "t2_role_minimum_primitives": 1,
-        "t2_role_static_bits": 4.915879,
-        "t2_role_successful_mass": 0.0350295721,
-        "t2_role_successful_mass_bits": 4.835283,
-        "t2_role_advantage_bits": 4.478369,
+        "t2_role_minimum_primitives": 2,
+        "t2_role_static_bits": 6.915879,
+        "t2_role_successful_mass": 0.0084677026,
+        "t2_role_successful_mass_bits": 6.883814,
+        "t2_role_advantage_bits": 6.343433,
         "t3_type": true,
         "t3_wrong_type_reason": "priority-violation",
         "t3_baseline_reason": "resource-conflict",
         "t3_movement_minimum_rules": 2,
-        "t3_movement_minimum_primitives": 3,
-        "t3_movement_static_bits": 12.23243,
-        "t3_movement_successful_mass": 0.0003028977,
-        "t3_movement_successful_mass_bits": 11.688882,
+        "t3_movement_minimum_primitives": 5,
+        "t3_movement_static_bits": 15.648316,
+        "t3_movement_successful_mass": 2.8073e-05,
+        "t3_movement_successful_mass_bits": 15.12046,
         "t3_role_minimum_rules": 1,
-        "t3_role_minimum_primitives": 1,
-        "t3_role_static_bits": 4.915879,
-        "t3_role_successful_mass": 0.0350295721,
-        "t3_role_successful_mass_bits": 4.835283,
-        "t3_role_advantage_bits": 6.853599,
+        "t3_role_minimum_primitives": 2,
+        "t3_role_static_bits": 6.915879,
+        "t3_role_successful_mass": 0.0084677026,
+        "t3_role_successful_mass_bits": 6.883814,
+        "t3_role_advantage_bits": 8.236646,
         "t4_type": true,
         "t4_wrong_type_reason": "priority-violation",
         "t4_baseline_reason": "resource-conflict",
         "t4_movement_minimum_rules": 2,
-        "t4_movement_minimum_primitives": 4,
-        "t4_movement_static_bits": 14.23243,
-        "t4_movement_successful_mass": 5.83924e-05,
-        "t4_movement_successful_mass_bits": 14.063859,
+        "t4_movement_minimum_primitives": 6,
+        "t4_movement_static_bits": 17.063354,
+        "t4_movement_successful_mass": 7.5578e-06,
+        "t4_movement_successful_mass_bits": 17.0136,
         "t4_role_minimum_rules": 1,
-        "t4_role_minimum_primitives": 1,
-        "t4_role_static_bits": 4.915879,
-        "t4_role_successful_mass": 0.0350295721,
-        "t4_role_successful_mass_bits": 4.835283,
-        "t4_role_advantage_bits": 9.228576,
+        "t4_role_minimum_primitives": 2,
+        "t4_role_static_bits": 6.915879,
+        "t4_role_successful_mass": 0.0084677026,
+        "t4_role_successful_mass_bits": 6.883814,
+        "t4_role_advantage_bits": 10.129786,
         "t5_type": true,
         "t5_wrong_type_reason": "priority-violation",
         "t5_baseline_reason": "resource-conflict",
         "t5_movement_minimum_rules": 3,
-        "t5_movement_minimum_primitives": 5,
-        "t5_movement_static_bits": 17.888658,
-        "t5_movement_successful_mass": 5.4091e-06,
-        "t5_movement_successful_mass_bits": 17.496172,
+        "t5_movement_minimum_primitives": 8,
+        "t5_movement_static_bits": 22.72375,
+        "t5_movement_successful_mass": 2.021e-07,
+        "t5_movement_successful_mass_bits": 22.238694,
         "t5_role_minimum_rules": 1,
-        "t5_role_minimum_primitives": 1,
-        "t5_role_static_bits": 4.915879,
-        "t5_role_successful_mass": 0.0350295721,
-        "t5_role_successful_mass_bits": 4.835283,
-        "t5_role_advantage_bits": 12.660889,
+        "t5_role_minimum_primitives": 2,
+        "t5_role_static_bits": 6.915879,
+        "t5_role_successful_mass": 0.0084677026,
+        "t5_role_successful_mass_bits": 6.883814,
+        "t5_role_advantage_bits": 15.35488,
         "t6_type": true,
         "t6_wrong_type_reason": "priority-violation",
         "t6_baseline_reason": "resource-conflict",
         "t6_movement_minimum_rules": 3,
-        "t6_movement_minimum_primitives": 6,
-        "t6_movement_static_bits": 19.888658,
-        "t6_movement_successful_mass": 1.0302e-06,
-        "t6_movement_successful_mass_bits": 19.888658,
+        "t6_movement_minimum_primitives": 9,
+        "t6_movement_static_bits": 24.138787,
+        "t6_movement_successful_mass": 5.41e-08,
+        "t6_movement_successful_mass_bits": 24.138787,
         "t6_role_minimum_rules": 1,
-        "t6_role_minimum_primitives": 1,
-        "t6_role_static_bits": 4.915879,
-        "t6_role_successful_mass": 0.0350295721,
-        "t6_role_successful_mass_bits": 4.835283,
-        "t6_role_advantage_bits": 15.053376,
+        "t6_role_minimum_primitives": 2,
+        "t6_role_static_bits": 6.915879,
+        "t6_role_successful_mass": 0.0084677026,
+        "t6_role_successful_mass_bits": 6.883814,
+        "t6_role_advantage_bits": 17.254974,
         "tree_stay_costs": [
           null,
           1,
@@ -399,6 +423,13 @@ window.PARADIGM_LIBRARIES = {
             "action": "MOVE",
             "conds": [
               {
+                "object": "Square being entered",
+                "property": "contested",
+                "p": "contested",
+                "v": true,
+                "negated": false
+              },
+              {
                 "object": "Movement",
                 "property": "move_dir",
                 "p": "move_dir",
@@ -415,30 +446,30 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 5.915879,
-              "successful_probability_mass": 0.0278474937,
-              "successful_mass_bits": 5.166309,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 7.915879,
+              "successful_probability_mass": 0.0061854681,
+              "successful_mass_bits": 7.336901,
               "successful_rulebook_count": 306,
               "static_witness": [
-                "north"
+                "contested AND north"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0490678589,
-              "successful_mass_bits": 4.349078,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0119804892,
+              "successful_mass_bits": 6.383169,
               "successful_rulebook_count": 23,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 0.817231,
+          "role_advantage_bits": 0.953732,
           "local_search": null,
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t1",
@@ -564,7 +595,6 @@ window.PARADIGM_LIBRARIES = {
           "machines": [],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -698,29 +728,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 2,
-              "minimum_static_bits": 10.23243,
-              "successful_probability_mass": 0.0015714898,
-              "successful_mass_bits": 9.313651,
+              "minimum_primitives": 4,
+              "minimum_static_bits": 14.233279,
+              "successful_probability_mass": 0.0001042802,
+              "successful_mass_bits": 13.227247,
               "successful_rulebook_count": 89,
               "static_witness": [
-                "north",
-                "south"
+                "contested AND north",
+                "contested AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 4.478369,
+          "role_advantage_bits": 6.343433,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -734,7 +764,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t2",
@@ -1007,7 +1037,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -1201,29 +1230,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 3,
-              "minimum_static_bits": 12.23243,
-              "successful_probability_mass": 0.0003028977,
-              "successful_mass_bits": 11.688882,
+              "minimum_primitives": 5,
+              "minimum_static_bits": 15.648316,
+              "successful_probability_mass": 2.8073e-05,
+              "successful_mass_bits": 15.12046,
               "successful_rulebook_count": 27,
               "static_witness": [
-                "south",
-                "ordinary road AND north"
+                "contested AND south",
+                "contested AND ordinary road AND north"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 6.853599,
+          "role_advantage_bits": 8.236646,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -1238,7 +1267,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t3",
@@ -1649,7 +1678,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -1903,29 +1931,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 4,
-              "minimum_static_bits": 14.23243,
-              "successful_probability_mass": 5.83924e-05,
-              "successful_mass_bits": 14.063859,
+              "minimum_primitives": 6,
+              "minimum_static_bits": 17.063354,
+              "successful_probability_mass": 7.5578e-06,
+              "successful_mass_bits": 17.0136,
               "successful_rulebook_count": 7,
               "static_witness": [
-                "ordinary road AND north",
-                "exit AND south"
+                "contested AND ordinary road AND north",
+                "contested AND exit AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 9.228576,
+          "role_advantage_bits": 10.129786,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -1940,7 +1968,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t4",
@@ -2727,7 +2755,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -3047,30 +3074,30 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 3,
-              "minimum_primitives": 5,
-              "minimum_static_bits": 17.888658,
-              "successful_probability_mass": 5.4091e-06,
-              "successful_mass_bits": 17.496172,
+              "minimum_primitives": 8,
+              "minimum_static_bits": 22.72375,
+              "successful_probability_mass": 2.021e-07,
+              "successful_mass_bits": 22.238694,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "west",
-                "ordinary road AND north",
-                "exit AND south"
+                "contested AND west",
+                "contested AND ordinary road AND north",
+                "contested AND exit AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 12.660889,
+          "role_advantage_bits": 15.35488,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -3086,7 +3113,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t5",
@@ -3859,7 +3886,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -4239,30 +4265,30 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 3,
-              "minimum_primitives": 6,
-              "minimum_static_bits": 19.888658,
-              "successful_probability_mass": 1.0302e-06,
-              "successful_mass_bits": 19.888658,
+              "minimum_primitives": 9,
+              "minimum_static_bits": 24.138787,
+              "successful_probability_mass": 5.41e-08,
+              "successful_mass_bits": 24.138787,
               "successful_rulebook_count": 1,
               "static_witness": [
-                "ordinary road AND north",
-                "exit AND south",
-                "exit AND west"
+                "contested AND ordinary road AND north",
+                "contested AND exit AND south",
+                "contested AND exit AND west"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 15.053376,
+          "role_advantage_bits": 17.254974,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -4279,7 +4305,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t6",
@@ -5012,7 +5038,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -5441,14 +5466,12 @@ window.PARADIGM_LIBRARIES = {
     ]
   },
   "ramp-fresh": {
-    "experiment_version": 17,
+    "experiment_version": 16,
     "title": "Warehouse Right-of-Way",
     "objective": "Write rules that let every robot complete its assigned task safely.",
     "condition": "fresh",
     "schedule": "ramp",
     "world_rules": [
-      "Rules are checked only when multiple robots try to enter the same square at the same time.",
-      "A robot that matches any rule waits for that time step.",
       "Some robots must leave through a marked exit; others enter a single-lane branch with near and far destinations.",
       "Robots choose their shortest legal route and move at the same time.",
       "An exit is a special map square that admits one robot at a time.",
@@ -5457,14 +5480,25 @@ window.PARADIGM_LIBRARIES = {
       "When two robots reach an exit together, one must wait before either robot enters.",
       "Only one of the two possible entry orders is accepted.",
       "After entering an exit, a robot leaves the work area.",
-      "All conditions within one rule must be true for that rule to apply."
+      "A rule applies to every robot in the current scene when all conditions are true."
     ],
     "rule_schema": {
       "action": {
         "id": "MOVE",
-        "label": "WAIT"
+        "label": "MOVE INTO A SQUARE"
       },
       "fields": [
+        {
+          "id": "contested",
+          "object": "Square being entered",
+          "predicate": "contested",
+          "values": [
+            {
+              "id": true,
+              "label": "being entered by multiple robots"
+            }
+          ]
+        },
         {
           "id": "target_type",
           "object": "Square being entered",
@@ -5525,10 +5559,18 @@ window.PARADIGM_LIBRARIES = {
     "global_actions": [
       {
         "id": "MOVE",
-        "label": "wait"
+        "label": "move into a square"
       }
     ],
     "global_vocabulary": [
+      {
+        "object": "Square being entered",
+        "property": "contested",
+        "predicate": "contested",
+        "value": true,
+        "negated": false,
+        "label": "being entered by multiple robots"
+      },
       {
         "object": "Square being entered",
         "property": "target_type",
@@ -5598,6 +5640,14 @@ window.PARADIGM_LIBRARIES = {
       "MOVE": [
         {
           "object": "Square being entered",
+          "property": "contested",
+          "predicate": "contested",
+          "value": true,
+          "negated": false,
+          "label": "being entered by multiple robots"
+        },
+        {
+          "object": "Square being entered",
           "property": "target_type",
           "predicate": "target_type",
           "value": "road",
@@ -5663,22 +5713,22 @@ window.PARADIGM_LIBRARIES = {
       ]
     },
     "ground_truth_design": {
-      "role_rule": "Carrier",
+      "role_rule": "contested + Carrier",
       "movement_minimum_primitives": [
-        1,
         2,
-        3,
         4,
         5,
-        6
+        6,
+        8,
+        9
       ],
       "role_minimum_primitives": [
-        1,
-        1,
-        1,
-        1,
-        1,
-        1
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
       ],
       "tree_stay_costs": [
         null,
@@ -5704,9 +5754,8 @@ window.PARADIGM_LIBRARIES = {
       "confirmatory_stimulus_ready": false,
       "primary_design_metric": "parameter_free_hierarchical_tree_distance",
       "schedule_contrast": "one_tree_edge_at_a_time_vs_four_edges_at_once",
-      "movement_anchor": "T1 begins with northbound",
-      "implicit_contested_gate": true,
-      "static_generation_model": "positive_only_hierarchical_grammar_v6",
+      "movement_anchor": "T1 begins with contested + northbound",
+      "static_generation_model": "positive_only_hierarchical_grammar_v5",
       "local_transition_model": "parameter_free_semantic_tree_v1",
       "negation_available": false
     },
@@ -5717,86 +5766,86 @@ window.PARADIGM_LIBRARIES = {
         "t1_wrong_type_reason": "lane-blocked",
         "t1_baseline_reason": "collision",
         "t1_movement_minimum_rules": 1,
-        "t1_movement_minimum_primitives": 1,
-        "t1_movement_static_bits": 5.915879,
-        "t1_movement_successful_mass": 0.0278474937,
-        "t1_movement_successful_mass_bits": 5.166309,
+        "t1_movement_minimum_primitives": 2,
+        "t1_movement_static_bits": 7.915879,
+        "t1_movement_successful_mass": 0.0061854681,
+        "t1_movement_successful_mass_bits": 7.336901,
         "t1_role_minimum_rules": 1,
-        "t1_role_minimum_primitives": 1,
-        "t1_role_static_bits": 4.915879,
-        "t1_role_successful_mass": 0.0490678589,
-        "t1_role_successful_mass_bits": 4.349078,
-        "t1_role_advantage_bits": 0.817231,
+        "t1_role_minimum_primitives": 2,
+        "t1_role_static_bits": 6.915879,
+        "t1_role_successful_mass": 0.0119804892,
+        "t1_role_successful_mass_bits": 6.383169,
+        "t1_role_advantage_bits": 0.953732,
         "t2_type": true,
         "t2_wrong_type_reason": "priority-violation",
         "t2_baseline_reason": "resource-conflict",
         "t2_movement_minimum_rules": 2,
-        "t2_movement_minimum_primitives": 2,
-        "t2_movement_static_bits": 10.23243,
-        "t2_movement_successful_mass": 0.0015714898,
-        "t2_movement_successful_mass_bits": 9.313651,
+        "t2_movement_minimum_primitives": 4,
+        "t2_movement_static_bits": 14.233279,
+        "t2_movement_successful_mass": 0.0001042802,
+        "t2_movement_successful_mass_bits": 13.227247,
         "t2_role_minimum_rules": 1,
-        "t2_role_minimum_primitives": 1,
-        "t2_role_static_bits": 4.915879,
-        "t2_role_successful_mass": 0.0350295721,
-        "t2_role_successful_mass_bits": 4.835283,
-        "t2_role_advantage_bits": 4.478369,
+        "t2_role_minimum_primitives": 2,
+        "t2_role_static_bits": 6.915879,
+        "t2_role_successful_mass": 0.0084677026,
+        "t2_role_successful_mass_bits": 6.883814,
+        "t2_role_advantage_bits": 6.343433,
         "t3_type": true,
         "t3_wrong_type_reason": "priority-violation",
         "t3_baseline_reason": "resource-conflict",
         "t3_movement_minimum_rules": 2,
-        "t3_movement_minimum_primitives": 3,
-        "t3_movement_static_bits": 12.23243,
-        "t3_movement_successful_mass": 0.0003028977,
-        "t3_movement_successful_mass_bits": 11.688882,
+        "t3_movement_minimum_primitives": 5,
+        "t3_movement_static_bits": 15.648316,
+        "t3_movement_successful_mass": 2.8073e-05,
+        "t3_movement_successful_mass_bits": 15.12046,
         "t3_role_minimum_rules": 1,
-        "t3_role_minimum_primitives": 1,
-        "t3_role_static_bits": 4.915879,
-        "t3_role_successful_mass": 0.0350295721,
-        "t3_role_successful_mass_bits": 4.835283,
-        "t3_role_advantage_bits": 6.853599,
+        "t3_role_minimum_primitives": 2,
+        "t3_role_static_bits": 6.915879,
+        "t3_role_successful_mass": 0.0084677026,
+        "t3_role_successful_mass_bits": 6.883814,
+        "t3_role_advantage_bits": 8.236646,
         "t4_type": true,
         "t4_wrong_type_reason": "priority-violation",
         "t4_baseline_reason": "resource-conflict",
         "t4_movement_minimum_rules": 2,
-        "t4_movement_minimum_primitives": 4,
-        "t4_movement_static_bits": 14.23243,
-        "t4_movement_successful_mass": 5.83924e-05,
-        "t4_movement_successful_mass_bits": 14.063859,
+        "t4_movement_minimum_primitives": 6,
+        "t4_movement_static_bits": 17.063354,
+        "t4_movement_successful_mass": 7.5578e-06,
+        "t4_movement_successful_mass_bits": 17.0136,
         "t4_role_minimum_rules": 1,
-        "t4_role_minimum_primitives": 1,
-        "t4_role_static_bits": 4.915879,
-        "t4_role_successful_mass": 0.0350295721,
-        "t4_role_successful_mass_bits": 4.835283,
-        "t4_role_advantage_bits": 9.228576,
+        "t4_role_minimum_primitives": 2,
+        "t4_role_static_bits": 6.915879,
+        "t4_role_successful_mass": 0.0084677026,
+        "t4_role_successful_mass_bits": 6.883814,
+        "t4_role_advantage_bits": 10.129786,
         "t5_type": true,
         "t5_wrong_type_reason": "priority-violation",
         "t5_baseline_reason": "resource-conflict",
         "t5_movement_minimum_rules": 3,
-        "t5_movement_minimum_primitives": 5,
-        "t5_movement_static_bits": 17.888658,
-        "t5_movement_successful_mass": 5.4091e-06,
-        "t5_movement_successful_mass_bits": 17.496172,
+        "t5_movement_minimum_primitives": 8,
+        "t5_movement_static_bits": 22.72375,
+        "t5_movement_successful_mass": 2.021e-07,
+        "t5_movement_successful_mass_bits": 22.238694,
         "t5_role_minimum_rules": 1,
-        "t5_role_minimum_primitives": 1,
-        "t5_role_static_bits": 4.915879,
-        "t5_role_successful_mass": 0.0350295721,
-        "t5_role_successful_mass_bits": 4.835283,
-        "t5_role_advantage_bits": 12.660889,
+        "t5_role_minimum_primitives": 2,
+        "t5_role_static_bits": 6.915879,
+        "t5_role_successful_mass": 0.0084677026,
+        "t5_role_successful_mass_bits": 6.883814,
+        "t5_role_advantage_bits": 15.35488,
         "t6_type": true,
         "t6_wrong_type_reason": "priority-violation",
         "t6_baseline_reason": "resource-conflict",
         "t6_movement_minimum_rules": 3,
-        "t6_movement_minimum_primitives": 6,
-        "t6_movement_static_bits": 19.888658,
-        "t6_movement_successful_mass": 1.0302e-06,
-        "t6_movement_successful_mass_bits": 19.888658,
+        "t6_movement_minimum_primitives": 9,
+        "t6_movement_static_bits": 24.138787,
+        "t6_movement_successful_mass": 5.41e-08,
+        "t6_movement_successful_mass_bits": 24.138787,
         "t6_role_minimum_rules": 1,
-        "t6_role_minimum_primitives": 1,
-        "t6_role_static_bits": 4.915879,
-        "t6_role_successful_mass": 0.0350295721,
-        "t6_role_successful_mass_bits": 4.835283,
-        "t6_role_advantage_bits": 15.053376,
+        "t6_role_minimum_primitives": 2,
+        "t6_role_static_bits": 6.915879,
+        "t6_role_successful_mass": 0.0084677026,
+        "t6_role_successful_mass_bits": 6.883814,
+        "t6_role_advantage_bits": 17.254974,
         "tree_stay_costs": [
           null,
           1,
@@ -5840,6 +5889,13 @@ window.PARADIGM_LIBRARIES = {
             "action": "MOVE",
             "conds": [
               {
+                "object": "Square being entered",
+                "property": "contested",
+                "p": "contested",
+                "v": true,
+                "negated": false
+              },
+              {
                 "object": "Movement",
                 "property": "move_dir",
                 "p": "move_dir",
@@ -5856,30 +5912,30 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 5.915879,
-              "successful_probability_mass": 0.0278474937,
-              "successful_mass_bits": 5.166309,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 7.915879,
+              "successful_probability_mass": 0.0061854681,
+              "successful_mass_bits": 7.336901,
               "successful_rulebook_count": 306,
               "static_witness": [
-                "north"
+                "contested AND north"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0490678589,
-              "successful_mass_bits": 4.349078,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0119804892,
+              "successful_mass_bits": 6.383169,
               "successful_rulebook_count": 23,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 0.817231,
+          "role_advantage_bits": 0.953732,
           "local_search": null,
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t1",
@@ -6005,7 +6061,6 @@ window.PARADIGM_LIBRARIES = {
           "machines": [],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -6139,29 +6194,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 2,
-              "minimum_static_bits": 10.23243,
-              "successful_probability_mass": 0.0015714898,
-              "successful_mass_bits": 9.313651,
+              "minimum_primitives": 4,
+              "minimum_static_bits": 14.233279,
+              "successful_probability_mass": 0.0001042802,
+              "successful_mass_bits": 13.227247,
               "successful_rulebook_count": 89,
               "static_witness": [
-                "north",
-                "south"
+                "contested AND north",
+                "contested AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 4.478369,
+          "role_advantage_bits": 6.343433,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -6175,7 +6230,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t2",
@@ -6448,7 +6503,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -6642,29 +6696,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 3,
-              "minimum_static_bits": 12.23243,
-              "successful_probability_mass": 0.0003028977,
-              "successful_mass_bits": 11.688882,
+              "minimum_primitives": 5,
+              "minimum_static_bits": 15.648316,
+              "successful_probability_mass": 2.8073e-05,
+              "successful_mass_bits": 15.12046,
               "successful_rulebook_count": 27,
               "static_witness": [
-                "south",
-                "ordinary road AND north"
+                "contested AND south",
+                "contested AND ordinary road AND north"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 6.853599,
+          "role_advantage_bits": 8.236646,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -6679,7 +6733,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t3",
@@ -7090,7 +7144,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -7344,29 +7397,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 4,
-              "minimum_static_bits": 14.23243,
-              "successful_probability_mass": 5.83924e-05,
-              "successful_mass_bits": 14.063859,
+              "minimum_primitives": 6,
+              "minimum_static_bits": 17.063354,
+              "successful_probability_mass": 7.5578e-06,
+              "successful_mass_bits": 17.0136,
               "successful_rulebook_count": 7,
               "static_witness": [
-                "ordinary road AND north",
-                "exit AND south"
+                "contested AND ordinary road AND north",
+                "contested AND exit AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 9.228576,
+          "role_advantage_bits": 10.129786,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -7381,7 +7434,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t4",
@@ -8168,7 +8221,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -8488,30 +8540,30 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 3,
-              "minimum_primitives": 5,
-              "minimum_static_bits": 17.888658,
-              "successful_probability_mass": 5.4091e-06,
-              "successful_mass_bits": 17.496172,
+              "minimum_primitives": 8,
+              "minimum_static_bits": 22.72375,
+              "successful_probability_mass": 2.021e-07,
+              "successful_mass_bits": 22.238694,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "west",
-                "ordinary road AND north",
-                "exit AND south"
+                "contested AND west",
+                "contested AND ordinary road AND north",
+                "contested AND exit AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 12.660889,
+          "role_advantage_bits": 15.35488,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -8527,7 +8579,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t5",
@@ -9300,7 +9352,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -9680,30 +9731,30 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 3,
-              "minimum_primitives": 6,
-              "minimum_static_bits": 19.888658,
-              "successful_probability_mass": 1.0302e-06,
-              "successful_mass_bits": 19.888658,
+              "minimum_primitives": 9,
+              "minimum_static_bits": 24.138787,
+              "successful_probability_mass": 5.41e-08,
+              "successful_mass_bits": 24.138787,
               "successful_rulebook_count": 1,
               "static_witness": [
-                "ordinary road AND north",
-                "exit AND south",
-                "exit AND west"
+                "contested AND ordinary road AND north",
+                "contested AND exit AND south",
+                "contested AND exit AND west"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 15.053376,
+          "role_advantage_bits": 17.254974,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -9720,7 +9771,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "ramp_pilot_t6",
@@ -10453,7 +10504,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -10882,14 +10932,12 @@ window.PARADIGM_LIBRARIES = {
     ]
   },
   "cliff-carry": {
-    "experiment_version": 17,
+    "experiment_version": 16,
     "title": "Warehouse Right-of-Way",
     "objective": "Write rules that let every robot complete its assigned task safely.",
     "condition": "carry",
     "schedule": "cliff",
     "world_rules": [
-      "Rules are checked only when multiple robots try to enter the same square at the same time.",
-      "A robot that matches any rule waits for that time step.",
       "Some robots must leave through a marked exit; others enter a single-lane branch with near and far destinations.",
       "Robots choose their shortest legal route and move at the same time.",
       "An exit is a special map square that admits one robot at a time.",
@@ -10898,14 +10946,25 @@ window.PARADIGM_LIBRARIES = {
       "When two robots reach an exit together, one must wait before either robot enters.",
       "Only one of the two possible entry orders is accepted.",
       "After entering an exit, a robot leaves the work area.",
-      "All conditions within one rule must be true for that rule to apply."
+      "A rule applies to every robot in the current scene when all conditions are true."
     ],
     "rule_schema": {
       "action": {
         "id": "MOVE",
-        "label": "WAIT"
+        "label": "MOVE INTO A SQUARE"
       },
       "fields": [
+        {
+          "id": "contested",
+          "object": "Square being entered",
+          "predicate": "contested",
+          "values": [
+            {
+              "id": true,
+              "label": "being entered by multiple robots"
+            }
+          ]
+        },
         {
           "id": "target_type",
           "object": "Square being entered",
@@ -10966,10 +11025,18 @@ window.PARADIGM_LIBRARIES = {
     "global_actions": [
       {
         "id": "MOVE",
-        "label": "wait"
+        "label": "move into a square"
       }
     ],
     "global_vocabulary": [
+      {
+        "object": "Square being entered",
+        "property": "contested",
+        "predicate": "contested",
+        "value": true,
+        "negated": false,
+        "label": "being entered by multiple robots"
+      },
       {
         "object": "Square being entered",
         "property": "target_type",
@@ -11039,6 +11106,14 @@ window.PARADIGM_LIBRARIES = {
       "MOVE": [
         {
           "object": "Square being entered",
+          "property": "contested",
+          "predicate": "contested",
+          "value": true,
+          "negated": false,
+          "label": "being entered by multiple robots"
+        },
+        {
+          "object": "Square being entered",
           "property": "target_type",
           "predicate": "target_type",
           "value": "road",
@@ -11104,22 +11179,22 @@ window.PARADIGM_LIBRARIES = {
       ]
     },
     "ground_truth_design": {
-      "role_rule": "Carrier",
+      "role_rule": "contested + Carrier",
       "movement_minimum_primitives": [
-        1,
         2,
-        2,
-        2,
-        2,
-        6
+        4,
+        4,
+        4,
+        4,
+        9
       ],
       "role_minimum_primitives": [
-        1,
-        1,
-        1,
-        1,
-        1,
-        1
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
       ],
       "tree_stay_costs": [
         null,
@@ -11145,9 +11220,8 @@ window.PARADIGM_LIBRARIES = {
       "confirmatory_stimulus_ready": false,
       "primary_design_metric": "parameter_free_hierarchical_tree_distance",
       "schedule_contrast": "one_tree_edge_at_a_time_vs_four_edges_at_once",
-      "movement_anchor": "T1 begins with northbound",
-      "implicit_contested_gate": true,
-      "static_generation_model": "positive_only_hierarchical_grammar_v6",
+      "movement_anchor": "T1 begins with contested + northbound",
+      "static_generation_model": "positive_only_hierarchical_grammar_v5",
       "local_transition_model": "parameter_free_semantic_tree_v1",
       "negation_available": false
     },
@@ -11158,86 +11232,86 @@ window.PARADIGM_LIBRARIES = {
         "t1_wrong_type_reason": "lane-blocked",
         "t1_baseline_reason": "collision",
         "t1_movement_minimum_rules": 1,
-        "t1_movement_minimum_primitives": 1,
-        "t1_movement_static_bits": 5.915879,
-        "t1_movement_successful_mass": 0.0278474937,
-        "t1_movement_successful_mass_bits": 5.166309,
+        "t1_movement_minimum_primitives": 2,
+        "t1_movement_static_bits": 7.915879,
+        "t1_movement_successful_mass": 0.0061854681,
+        "t1_movement_successful_mass_bits": 7.336901,
         "t1_role_minimum_rules": 1,
-        "t1_role_minimum_primitives": 1,
-        "t1_role_static_bits": 4.915879,
-        "t1_role_successful_mass": 0.0490678589,
-        "t1_role_successful_mass_bits": 4.349078,
-        "t1_role_advantage_bits": 0.817231,
+        "t1_role_minimum_primitives": 2,
+        "t1_role_static_bits": 6.915879,
+        "t1_role_successful_mass": 0.0119804892,
+        "t1_role_successful_mass_bits": 6.383169,
+        "t1_role_advantage_bits": 0.953732,
         "t2_type": true,
         "t2_wrong_type_reason": "priority-violation",
         "t2_baseline_reason": "resource-conflict",
         "t2_movement_minimum_rules": 2,
-        "t2_movement_minimum_primitives": 2,
-        "t2_movement_static_bits": 10.23243,
-        "t2_movement_successful_mass": 0.0015714898,
-        "t2_movement_successful_mass_bits": 9.313651,
+        "t2_movement_minimum_primitives": 4,
+        "t2_movement_static_bits": 14.233279,
+        "t2_movement_successful_mass": 0.0001042802,
+        "t2_movement_successful_mass_bits": 13.227247,
         "t2_role_minimum_rules": 1,
-        "t2_role_minimum_primitives": 1,
-        "t2_role_static_bits": 4.915879,
-        "t2_role_successful_mass": 0.0350295721,
-        "t2_role_successful_mass_bits": 4.835283,
-        "t2_role_advantage_bits": 4.478369,
+        "t2_role_minimum_primitives": 2,
+        "t2_role_static_bits": 6.915879,
+        "t2_role_successful_mass": 0.0084677026,
+        "t2_role_successful_mass_bits": 6.883814,
+        "t2_role_advantage_bits": 6.343433,
         "t3_type": true,
         "t3_wrong_type_reason": "priority-violation",
         "t3_baseline_reason": "resource-conflict",
         "t3_movement_minimum_rules": 2,
-        "t3_movement_minimum_primitives": 2,
-        "t3_movement_static_bits": 10.23243,
-        "t3_movement_successful_mass": 0.0015714898,
-        "t3_movement_successful_mass_bits": 9.313651,
+        "t3_movement_minimum_primitives": 4,
+        "t3_movement_static_bits": 14.233279,
+        "t3_movement_successful_mass": 0.0001042802,
+        "t3_movement_successful_mass_bits": 13.227247,
         "t3_role_minimum_rules": 1,
-        "t3_role_minimum_primitives": 1,
-        "t3_role_static_bits": 4.915879,
-        "t3_role_successful_mass": 0.0350295721,
-        "t3_role_successful_mass_bits": 4.835283,
-        "t3_role_advantage_bits": 4.478369,
+        "t3_role_minimum_primitives": 2,
+        "t3_role_static_bits": 6.915879,
+        "t3_role_successful_mass": 0.0084677026,
+        "t3_role_successful_mass_bits": 6.883814,
+        "t3_role_advantage_bits": 6.343433,
         "t4_type": true,
         "t4_wrong_type_reason": "priority-violation",
         "t4_baseline_reason": "resource-conflict",
         "t4_movement_minimum_rules": 2,
-        "t4_movement_minimum_primitives": 2,
-        "t4_movement_static_bits": 10.23243,
-        "t4_movement_successful_mass": 0.0015714898,
-        "t4_movement_successful_mass_bits": 9.313651,
+        "t4_movement_minimum_primitives": 4,
+        "t4_movement_static_bits": 14.233279,
+        "t4_movement_successful_mass": 0.0001042802,
+        "t4_movement_successful_mass_bits": 13.227247,
         "t4_role_minimum_rules": 1,
-        "t4_role_minimum_primitives": 1,
-        "t4_role_static_bits": 4.915879,
-        "t4_role_successful_mass": 0.0350295721,
-        "t4_role_successful_mass_bits": 4.835283,
-        "t4_role_advantage_bits": 4.478369,
+        "t4_role_minimum_primitives": 2,
+        "t4_role_static_bits": 6.915879,
+        "t4_role_successful_mass": 0.0084677026,
+        "t4_role_successful_mass_bits": 6.883814,
+        "t4_role_advantage_bits": 6.343433,
         "t5_type": true,
         "t5_wrong_type_reason": "priority-violation",
         "t5_baseline_reason": "resource-conflict",
         "t5_movement_minimum_rules": 2,
-        "t5_movement_minimum_primitives": 2,
-        "t5_movement_static_bits": 10.23243,
-        "t5_movement_successful_mass": 0.0015714898,
-        "t5_movement_successful_mass_bits": 9.313651,
+        "t5_movement_minimum_primitives": 4,
+        "t5_movement_static_bits": 14.233279,
+        "t5_movement_successful_mass": 0.0001042802,
+        "t5_movement_successful_mass_bits": 13.227247,
         "t5_role_minimum_rules": 1,
-        "t5_role_minimum_primitives": 1,
-        "t5_role_static_bits": 4.915879,
-        "t5_role_successful_mass": 0.0350295721,
-        "t5_role_successful_mass_bits": 4.835283,
-        "t5_role_advantage_bits": 4.478369,
+        "t5_role_minimum_primitives": 2,
+        "t5_role_static_bits": 6.915879,
+        "t5_role_successful_mass": 0.0084677026,
+        "t5_role_successful_mass_bits": 6.883814,
+        "t5_role_advantage_bits": 6.343433,
         "t6_type": true,
         "t6_wrong_type_reason": "priority-violation",
         "t6_baseline_reason": "resource-conflict",
         "t6_movement_minimum_rules": 3,
-        "t6_movement_minimum_primitives": 6,
-        "t6_movement_static_bits": 19.888658,
-        "t6_movement_successful_mass": 1.0302e-06,
-        "t6_movement_successful_mass_bits": 19.888658,
+        "t6_movement_minimum_primitives": 9,
+        "t6_movement_static_bits": 24.138787,
+        "t6_movement_successful_mass": 5.41e-08,
+        "t6_movement_successful_mass_bits": 24.138787,
         "t6_role_minimum_rules": 1,
-        "t6_role_minimum_primitives": 1,
-        "t6_role_static_bits": 4.915879,
-        "t6_role_successful_mass": 0.0350295721,
-        "t6_role_successful_mass_bits": 4.835283,
-        "t6_role_advantage_bits": 15.053376,
+        "t6_role_minimum_primitives": 2,
+        "t6_role_static_bits": 6.915879,
+        "t6_role_successful_mass": 0.0084677026,
+        "t6_role_successful_mass_bits": 6.883814,
+        "t6_role_advantage_bits": 17.254974,
         "tree_stay_costs": [
           null,
           1,
@@ -11281,6 +11355,13 @@ window.PARADIGM_LIBRARIES = {
             "action": "MOVE",
             "conds": [
               {
+                "object": "Square being entered",
+                "property": "contested",
+                "p": "contested",
+                "v": true,
+                "negated": false
+              },
+              {
                 "object": "Movement",
                 "property": "move_dir",
                 "p": "move_dir",
@@ -11297,30 +11378,30 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 5.915879,
-              "successful_probability_mass": 0.0278474937,
-              "successful_mass_bits": 5.166309,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 7.915879,
+              "successful_probability_mass": 0.0061854681,
+              "successful_mass_bits": 7.336901,
               "successful_rulebook_count": 306,
               "static_witness": [
-                "north"
+                "contested AND north"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0490678589,
-              "successful_mass_bits": 4.349078,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0119804892,
+              "successful_mass_bits": 6.383169,
               "successful_rulebook_count": 23,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 0.817231,
+          "role_advantage_bits": 0.953732,
           "local_search": null,
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t1",
@@ -13422,7 +13503,6 @@ window.PARADIGM_LIBRARIES = {
           "machines": [],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -13556,29 +13636,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 2,
-              "minimum_static_bits": 10.23243,
-              "successful_probability_mass": 0.0015714898,
-              "successful_mass_bits": 9.313651,
+              "minimum_primitives": 4,
+              "minimum_static_bits": 14.233279,
+              "successful_probability_mass": 0.0001042802,
+              "successful_mass_bits": 13.227247,
               "successful_rulebook_count": 89,
               "static_witness": [
-                "north",
-                "south"
+                "contested AND north",
+                "contested AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 4.478369,
+          "role_advantage_bits": 6.343433,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -13592,7 +13672,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t2",
@@ -15673,7 +15753,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -15867,29 +15946,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 2,
-              "minimum_static_bits": 10.23243,
-              "successful_probability_mass": 0.0015714898,
-              "successful_mass_bits": 9.313651,
+              "minimum_primitives": 4,
+              "minimum_static_bits": 14.233279,
+              "successful_probability_mass": 0.0001042802,
+              "successful_mass_bits": 13.227247,
               "successful_rulebook_count": 89,
               "static_witness": [
-                "north",
-                "south"
+                "contested AND north",
+                "contested AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 4.478369,
+          "role_advantage_bits": 6.343433,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -15904,7 +15983,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t3",
@@ -17937,7 +18016,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -18197,29 +18275,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 2,
-              "minimum_static_bits": 10.23243,
-              "successful_probability_mass": 0.0015714898,
-              "successful_mass_bits": 9.313651,
+              "minimum_primitives": 4,
+              "minimum_static_bits": 14.233279,
+              "successful_probability_mass": 0.0001042802,
+              "successful_mass_bits": 13.227247,
               "successful_rulebook_count": 89,
               "static_witness": [
-                "north",
-                "south"
+                "contested AND north",
+                "contested AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 4.478369,
+          "role_advantage_bits": 6.343433,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -18234,7 +18312,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t4",
@@ -20237,7 +20315,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -20557,29 +20634,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 2,
-              "minimum_static_bits": 10.23243,
-              "successful_probability_mass": 0.0015714898,
-              "successful_mass_bits": 9.313651,
+              "minimum_primitives": 4,
+              "minimum_static_bits": 14.233279,
+              "successful_probability_mass": 0.0001042802,
+              "successful_mass_bits": 13.227247,
               "successful_rulebook_count": 89,
               "static_witness": [
-                "north",
-                "south"
+                "contested AND north",
+                "contested AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 4.478369,
+          "role_advantage_bits": 6.343433,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -20594,7 +20671,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t5",
@@ -22529,7 +22606,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -22915,30 +22991,30 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 3,
-              "minimum_primitives": 6,
-              "minimum_static_bits": 19.888658,
-              "successful_probability_mass": 1.0302e-06,
-              "successful_mass_bits": 19.888658,
+              "minimum_primitives": 9,
+              "minimum_static_bits": 24.138787,
+              "successful_probability_mass": 5.41e-08,
+              "successful_mass_bits": 24.138787,
               "successful_rulebook_count": 1,
               "static_witness": [
-                "ordinary road AND north",
-                "exit AND south",
-                "exit AND west"
+                "contested AND ordinary road AND north",
+                "contested AND exit AND south",
+                "contested AND exit AND west"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 15.053376,
+          "role_advantage_bits": 17.254974,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -22954,7 +23030,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "role"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t6",
@@ -24741,7 +24817,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -25362,14 +25437,12 @@ window.PARADIGM_LIBRARIES = {
     ]
   },
   "cliff-fresh": {
-    "experiment_version": 17,
+    "experiment_version": 16,
     "title": "Warehouse Right-of-Way",
     "objective": "Write rules that let every robot complete its assigned task safely.",
     "condition": "fresh",
     "schedule": "cliff",
     "world_rules": [
-      "Rules are checked only when multiple robots try to enter the same square at the same time.",
-      "A robot that matches any rule waits for that time step.",
       "Some robots must leave through a marked exit; others enter a single-lane branch with near and far destinations.",
       "Robots choose their shortest legal route and move at the same time.",
       "An exit is a special map square that admits one robot at a time.",
@@ -25378,14 +25451,25 @@ window.PARADIGM_LIBRARIES = {
       "When two robots reach an exit together, one must wait before either robot enters.",
       "Only one of the two possible entry orders is accepted.",
       "After entering an exit, a robot leaves the work area.",
-      "All conditions within one rule must be true for that rule to apply."
+      "A rule applies to every robot in the current scene when all conditions are true."
     ],
     "rule_schema": {
       "action": {
         "id": "MOVE",
-        "label": "WAIT"
+        "label": "MOVE INTO A SQUARE"
       },
       "fields": [
+        {
+          "id": "contested",
+          "object": "Square being entered",
+          "predicate": "contested",
+          "values": [
+            {
+              "id": true,
+              "label": "being entered by multiple robots"
+            }
+          ]
+        },
         {
           "id": "target_type",
           "object": "Square being entered",
@@ -25446,10 +25530,18 @@ window.PARADIGM_LIBRARIES = {
     "global_actions": [
       {
         "id": "MOVE",
-        "label": "wait"
+        "label": "move into a square"
       }
     ],
     "global_vocabulary": [
+      {
+        "object": "Square being entered",
+        "property": "contested",
+        "predicate": "contested",
+        "value": true,
+        "negated": false,
+        "label": "being entered by multiple robots"
+      },
       {
         "object": "Square being entered",
         "property": "target_type",
@@ -25519,6 +25611,14 @@ window.PARADIGM_LIBRARIES = {
       "MOVE": [
         {
           "object": "Square being entered",
+          "property": "contested",
+          "predicate": "contested",
+          "value": true,
+          "negated": false,
+          "label": "being entered by multiple robots"
+        },
+        {
+          "object": "Square being entered",
           "property": "target_type",
           "predicate": "target_type",
           "value": "road",
@@ -25584,22 +25684,22 @@ window.PARADIGM_LIBRARIES = {
       ]
     },
     "ground_truth_design": {
-      "role_rule": "Carrier",
+      "role_rule": "contested + Carrier",
       "movement_minimum_primitives": [
-        1,
         2,
-        2,
-        2,
-        2,
-        6
+        4,
+        4,
+        4,
+        4,
+        9
       ],
       "role_minimum_primitives": [
-        1,
-        1,
-        1,
-        1,
-        1,
-        1
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
       ],
       "tree_stay_costs": [
         null,
@@ -25625,9 +25725,8 @@ window.PARADIGM_LIBRARIES = {
       "confirmatory_stimulus_ready": false,
       "primary_design_metric": "parameter_free_hierarchical_tree_distance",
       "schedule_contrast": "one_tree_edge_at_a_time_vs_four_edges_at_once",
-      "movement_anchor": "T1 begins with northbound",
-      "implicit_contested_gate": true,
-      "static_generation_model": "positive_only_hierarchical_grammar_v6",
+      "movement_anchor": "T1 begins with contested + northbound",
+      "static_generation_model": "positive_only_hierarchical_grammar_v5",
       "local_transition_model": "parameter_free_semantic_tree_v1",
       "negation_available": false
     },
@@ -25638,86 +25737,86 @@ window.PARADIGM_LIBRARIES = {
         "t1_wrong_type_reason": "lane-blocked",
         "t1_baseline_reason": "collision",
         "t1_movement_minimum_rules": 1,
-        "t1_movement_minimum_primitives": 1,
-        "t1_movement_static_bits": 5.915879,
-        "t1_movement_successful_mass": 0.0278474937,
-        "t1_movement_successful_mass_bits": 5.166309,
+        "t1_movement_minimum_primitives": 2,
+        "t1_movement_static_bits": 7.915879,
+        "t1_movement_successful_mass": 0.0061854681,
+        "t1_movement_successful_mass_bits": 7.336901,
         "t1_role_minimum_rules": 1,
-        "t1_role_minimum_primitives": 1,
-        "t1_role_static_bits": 4.915879,
-        "t1_role_successful_mass": 0.0490678589,
-        "t1_role_successful_mass_bits": 4.349078,
-        "t1_role_advantage_bits": 0.817231,
+        "t1_role_minimum_primitives": 2,
+        "t1_role_static_bits": 6.915879,
+        "t1_role_successful_mass": 0.0119804892,
+        "t1_role_successful_mass_bits": 6.383169,
+        "t1_role_advantage_bits": 0.953732,
         "t2_type": true,
         "t2_wrong_type_reason": "priority-violation",
         "t2_baseline_reason": "resource-conflict",
         "t2_movement_minimum_rules": 2,
-        "t2_movement_minimum_primitives": 2,
-        "t2_movement_static_bits": 10.23243,
-        "t2_movement_successful_mass": 0.0015714898,
-        "t2_movement_successful_mass_bits": 9.313651,
+        "t2_movement_minimum_primitives": 4,
+        "t2_movement_static_bits": 14.233279,
+        "t2_movement_successful_mass": 0.0001042802,
+        "t2_movement_successful_mass_bits": 13.227247,
         "t2_role_minimum_rules": 1,
-        "t2_role_minimum_primitives": 1,
-        "t2_role_static_bits": 4.915879,
-        "t2_role_successful_mass": 0.0350295721,
-        "t2_role_successful_mass_bits": 4.835283,
-        "t2_role_advantage_bits": 4.478369,
+        "t2_role_minimum_primitives": 2,
+        "t2_role_static_bits": 6.915879,
+        "t2_role_successful_mass": 0.0084677026,
+        "t2_role_successful_mass_bits": 6.883814,
+        "t2_role_advantage_bits": 6.343433,
         "t3_type": true,
         "t3_wrong_type_reason": "priority-violation",
         "t3_baseline_reason": "resource-conflict",
         "t3_movement_minimum_rules": 2,
-        "t3_movement_minimum_primitives": 2,
-        "t3_movement_static_bits": 10.23243,
-        "t3_movement_successful_mass": 0.0015714898,
-        "t3_movement_successful_mass_bits": 9.313651,
+        "t3_movement_minimum_primitives": 4,
+        "t3_movement_static_bits": 14.233279,
+        "t3_movement_successful_mass": 0.0001042802,
+        "t3_movement_successful_mass_bits": 13.227247,
         "t3_role_minimum_rules": 1,
-        "t3_role_minimum_primitives": 1,
-        "t3_role_static_bits": 4.915879,
-        "t3_role_successful_mass": 0.0350295721,
-        "t3_role_successful_mass_bits": 4.835283,
-        "t3_role_advantage_bits": 4.478369,
+        "t3_role_minimum_primitives": 2,
+        "t3_role_static_bits": 6.915879,
+        "t3_role_successful_mass": 0.0084677026,
+        "t3_role_successful_mass_bits": 6.883814,
+        "t3_role_advantage_bits": 6.343433,
         "t4_type": true,
         "t4_wrong_type_reason": "priority-violation",
         "t4_baseline_reason": "resource-conflict",
         "t4_movement_minimum_rules": 2,
-        "t4_movement_minimum_primitives": 2,
-        "t4_movement_static_bits": 10.23243,
-        "t4_movement_successful_mass": 0.0015714898,
-        "t4_movement_successful_mass_bits": 9.313651,
+        "t4_movement_minimum_primitives": 4,
+        "t4_movement_static_bits": 14.233279,
+        "t4_movement_successful_mass": 0.0001042802,
+        "t4_movement_successful_mass_bits": 13.227247,
         "t4_role_minimum_rules": 1,
-        "t4_role_minimum_primitives": 1,
-        "t4_role_static_bits": 4.915879,
-        "t4_role_successful_mass": 0.0350295721,
-        "t4_role_successful_mass_bits": 4.835283,
-        "t4_role_advantage_bits": 4.478369,
+        "t4_role_minimum_primitives": 2,
+        "t4_role_static_bits": 6.915879,
+        "t4_role_successful_mass": 0.0084677026,
+        "t4_role_successful_mass_bits": 6.883814,
+        "t4_role_advantage_bits": 6.343433,
         "t5_type": true,
         "t5_wrong_type_reason": "priority-violation",
         "t5_baseline_reason": "resource-conflict",
         "t5_movement_minimum_rules": 2,
-        "t5_movement_minimum_primitives": 2,
-        "t5_movement_static_bits": 10.23243,
-        "t5_movement_successful_mass": 0.0015714898,
-        "t5_movement_successful_mass_bits": 9.313651,
+        "t5_movement_minimum_primitives": 4,
+        "t5_movement_static_bits": 14.233279,
+        "t5_movement_successful_mass": 0.0001042802,
+        "t5_movement_successful_mass_bits": 13.227247,
         "t5_role_minimum_rules": 1,
-        "t5_role_minimum_primitives": 1,
-        "t5_role_static_bits": 4.915879,
-        "t5_role_successful_mass": 0.0350295721,
-        "t5_role_successful_mass_bits": 4.835283,
-        "t5_role_advantage_bits": 4.478369,
+        "t5_role_minimum_primitives": 2,
+        "t5_role_static_bits": 6.915879,
+        "t5_role_successful_mass": 0.0084677026,
+        "t5_role_successful_mass_bits": 6.883814,
+        "t5_role_advantage_bits": 6.343433,
         "t6_type": true,
         "t6_wrong_type_reason": "priority-violation",
         "t6_baseline_reason": "resource-conflict",
         "t6_movement_minimum_rules": 3,
-        "t6_movement_minimum_primitives": 6,
-        "t6_movement_static_bits": 19.888658,
-        "t6_movement_successful_mass": 1.0302e-06,
-        "t6_movement_successful_mass_bits": 19.888658,
+        "t6_movement_minimum_primitives": 9,
+        "t6_movement_static_bits": 24.138787,
+        "t6_movement_successful_mass": 5.41e-08,
+        "t6_movement_successful_mass_bits": 24.138787,
         "t6_role_minimum_rules": 1,
-        "t6_role_minimum_primitives": 1,
-        "t6_role_static_bits": 4.915879,
-        "t6_role_successful_mass": 0.0350295721,
-        "t6_role_successful_mass_bits": 4.835283,
-        "t6_role_advantage_bits": 15.053376,
+        "t6_role_minimum_primitives": 2,
+        "t6_role_static_bits": 6.915879,
+        "t6_role_successful_mass": 0.0084677026,
+        "t6_role_successful_mass_bits": 6.883814,
+        "t6_role_advantage_bits": 17.254974,
         "tree_stay_costs": [
           null,
           1,
@@ -25761,6 +25860,13 @@ window.PARADIGM_LIBRARIES = {
             "action": "MOVE",
             "conds": [
               {
+                "object": "Square being entered",
+                "property": "contested",
+                "p": "contested",
+                "v": true,
+                "negated": false
+              },
+              {
                 "object": "Movement",
                 "property": "move_dir",
                 "p": "move_dir",
@@ -25777,30 +25883,30 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 5.915879,
-              "successful_probability_mass": 0.0278474937,
-              "successful_mass_bits": 5.166309,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 7.915879,
+              "successful_probability_mass": 0.0061854681,
+              "successful_mass_bits": 7.336901,
               "successful_rulebook_count": 306,
               "static_witness": [
-                "north"
+                "contested AND north"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0490678589,
-              "successful_mass_bits": 4.349078,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0119804892,
+              "successful_mass_bits": 6.383169,
               "successful_rulebook_count": 23,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 0.817231,
+          "role_advantage_bits": 0.953732,
           "local_search": null,
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t1",
@@ -27902,7 +28008,6 @@ window.PARADIGM_LIBRARIES = {
           "machines": [],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -28036,29 +28141,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 2,
-              "minimum_static_bits": 10.23243,
-              "successful_probability_mass": 0.0015714898,
-              "successful_mass_bits": 9.313651,
+              "minimum_primitives": 4,
+              "minimum_static_bits": 14.233279,
+              "successful_probability_mass": 0.0001042802,
+              "successful_mass_bits": 13.227247,
               "successful_rulebook_count": 89,
               "static_witness": [
-                "north",
-                "south"
+                "contested AND north",
+                "contested AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 4.478369,
+          "role_advantage_bits": 6.343433,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -28072,7 +28177,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t2",
@@ -30153,7 +30258,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -30347,29 +30451,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 2,
-              "minimum_static_bits": 10.23243,
-              "successful_probability_mass": 0.0015714898,
-              "successful_mass_bits": 9.313651,
+              "minimum_primitives": 4,
+              "minimum_static_bits": 14.233279,
+              "successful_probability_mass": 0.0001042802,
+              "successful_mass_bits": 13.227247,
               "successful_rulebook_count": 89,
               "static_witness": [
-                "north",
-                "south"
+                "contested AND north",
+                "contested AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 4.478369,
+          "role_advantage_bits": 6.343433,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -30384,7 +30488,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t3",
@@ -32417,7 +32521,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -32677,29 +32780,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 2,
-              "minimum_static_bits": 10.23243,
-              "successful_probability_mass": 0.0015714898,
-              "successful_mass_bits": 9.313651,
+              "minimum_primitives": 4,
+              "minimum_static_bits": 14.233279,
+              "successful_probability_mass": 0.0001042802,
+              "successful_mass_bits": 13.227247,
               "successful_rulebook_count": 89,
               "static_witness": [
-                "north",
-                "south"
+                "contested AND north",
+                "contested AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 4.478369,
+          "role_advantage_bits": 6.343433,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -32714,7 +32817,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t4",
@@ -34717,7 +34820,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -35037,29 +35139,29 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 2,
-              "minimum_primitives": 2,
-              "minimum_static_bits": 10.23243,
-              "successful_probability_mass": 0.0015714898,
-              "successful_mass_bits": 9.313651,
+              "minimum_primitives": 4,
+              "minimum_static_bits": 14.233279,
+              "successful_probability_mass": 0.0001042802,
+              "successful_mass_bits": 13.227247,
               "successful_rulebook_count": 89,
               "static_witness": [
-                "north",
-                "south"
+                "contested AND north",
+                "contested AND south"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 4.478369,
+          "role_advantage_bits": 6.343433,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -35074,7 +35176,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "movement"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t5",
@@ -37009,7 +37111,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,
@@ -37395,30 +37496,30 @@ window.PARADIGM_LIBRARIES = {
           "representation_scores": {
             "movement": {
               "minimum_rules": 3,
-              "minimum_primitives": 6,
-              "minimum_static_bits": 19.888658,
-              "successful_probability_mass": 1.0302e-06,
-              "successful_mass_bits": 19.888658,
+              "minimum_primitives": 9,
+              "minimum_static_bits": 24.138787,
+              "successful_probability_mass": 5.41e-08,
+              "successful_mass_bits": 24.138787,
               "successful_rulebook_count": 1,
               "static_witness": [
-                "ordinary road AND north",
-                "exit AND south",
-                "exit AND west"
+                "contested AND ordinary road AND north",
+                "contested AND exit AND south",
+                "contested AND exit AND west"
               ]
             },
             "role": {
               "minimum_rules": 1,
-              "minimum_primitives": 1,
-              "minimum_static_bits": 4.915879,
-              "successful_probability_mass": 0.0350295721,
-              "successful_mass_bits": 4.835283,
+              "minimum_primitives": 2,
+              "minimum_static_bits": 6.915879,
+              "successful_probability_mass": 0.0084677026,
+              "successful_mass_bits": 6.883814,
               "successful_rulebook_count": 5,
               "static_witness": [
-                "Carrier"
+                "contested AND Carrier"
               ]
             }
           },
-          "role_advantage_bits": 15.053376,
+          "role_advantage_bits": 17.254974,
           "local_search": {
             "model": "parameter_free_tree_distance",
             "start_program": [
@@ -37434,7 +37535,7 @@ window.PARADIGM_LIBRARIES = {
             "switch_cost": 3,
             "preferred_update": "role"
           },
-          "role_reference": "Carrier"
+          "role_reference": "contested + Carrier"
         },
         "world": {
           "name": "cliff_pilot_t6",
@@ -39221,7 +39322,6 @@ window.PARADIGM_LIBRARIES = {
           ],
           "scanners": [],
           "priority_role": "operator",
-          "implicit_contested_gate": true,
           "agents": [
             {
               "id": 0,

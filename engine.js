@@ -8,7 +8,7 @@ const COL = ["#d85a30", "#378add", "#1d9e75", "#8b5fbf", "#b36b00", "#56606b", "
 
 const RAW_LIBRARY = window.TASK_LIBRARY || { global_actions: [], global_vocabulary: [], action_condition_space: {}, tasks: [] };
 
-const ACTION_ZH = { MOVE:"wait" };
+const ACTION_ZH = { MOVE:"move into a square" };
 const LABEL_ZH = {
   "dest_zone:cold": "the destination is cold storage",
   "dest_zone:fragile": "the destination is the fragile zone",
@@ -30,6 +30,7 @@ const LABEL_ZH = {
   "role:carrier": "the robot is a Carrier",
   "role:cleaner": "the robot is a cleaner",
   "role:operator": "the robot is an Operator",
+  "contested:true": "the target square is being entered by multiple robots",
   "item_unscanned:true": "the item is unscanned",
   "item_colour:red": "the item is red",
   "item_colour:blue": "the item is blue",
@@ -112,7 +113,6 @@ function normalizeTask(task){
     machines,
     scanners,
     priorityRole: task.world.priority_role || null,
-    implicitContestedGate: !!task.world.implicit_contested_gate,
     agents: task.world.agents.map(a => ({
       id: a.id,
       pos: a.start.slice(),
@@ -187,11 +187,8 @@ function atom(ctx, cond){
 }
 
 const isDynamic = norm => norm.conds.some(c => c.p === "contested");
-const matchesNorm = (norm, ctx) => {
-  if(norm.action !== ctx.action) return false;
-  if(norm.action === "MOVE" && ctx.world.implicitContestedGate && !ctx.contested) return false;
-  return norm.conds.every(c => atom(ctx, c) !== !!c.negated);
-};
+const matchesNorm = (norm, ctx) =>
+  norm.action === ctx.action && norm.conds.every(c => atom(ctx, c) !== !!c.negated);
 
 function staticForbidden(world, agent, staticNorms, action, opts){
   const ctx = {
@@ -388,12 +385,10 @@ function simulate(scn, rules){
     machines:scn.machines,
     scanners:scn.scanners,
     priorityRole:scn.priorityRole,
-    implicitContestedGate:scn.implicitContestedGate,
   };
   Object.values(world.items).forEach(item => { item.cell = item.cell.slice(); });
-  const executionOnly = norm => world.implicitContestedGate && norm.action === "MOVE";
-  const staticNorms = rules.filter(n => !executionOnly(n) && !isDynamic(n));
-  const dynamicNorms = rules.filter(n => executionOnly(n) || isDynamic(n));
+  const staticNorms = rules.filter(n => !isDynamic(n));
+  const dynamicNorms = rules.filter(isDynamic);
   const agentsById = {}, pos = {}, plans = {}, ptr = {};
   const released = new Set();
   const preparedMachines = new Set();
