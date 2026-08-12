@@ -50,7 +50,7 @@ const ZONE_ZH = {
 const ITEM_ZH = { red:"red item", blue:"blue item" };
 const MACHINE_ZH = { packer:"Packer", sealer:"Sealer" };
 function machineLabel(id){
-  return MACHINE_ZH[id] || (String(id).startsWith("processor_") ? "machine square" : id);
+  return MACHINE_ZH[id] || (String(id).startsWith("processor_") ? "exit" : id);
 }
 
 function literalKey(p, v){ return p + ":" + String(v); }
@@ -98,6 +98,7 @@ function normalizeTask(task){
     family: task.family,
     description: task.description,
     participantPrompt: task.participant_prompt,
+    starter_rulebook: task.starter_rulebook || [],
     activeAgentCount:task.active_agent_count,
     measure: task.measure,
     expectedMinNorms: task.expected_min_norms,
@@ -149,7 +150,7 @@ function stepLabel(step){
   if(step.kind === "move") return `Move to (${step.cell[0]}, ${step.cell[1]})`;
   if(step.kind === "scan") return "Scan item";
   if(step.kind === "pick") return "Pick up item";
-  if(step.kind === "use") return `Use ${machineLabel(step.machine)}`;
+  if(step.kind === "use") return `Enter ${machineLabel(step.machine)}`;
   return step.kind;
 }
 
@@ -163,7 +164,9 @@ function eventAgentIds(event){
 
 function atom(ctx, cond){
   if(cond.p === "target_type"){
-    if(cond.v === "machine") return Object.values(ctx.world.machines).some(machine => sameCell(machine.cell, ctx.cell));
+    const atMachine = Object.values(ctx.world.machines).some(machine => sameCell(machine.cell, ctx.cell));
+    if(cond.v === "machine") return atMachine;
+    if(cond.v === "road") return !atMachine;
     return zoneOf(ctx.world, ctx.cell) === cond.v;
   }
   if(cond.p === "dest_zone") return zoneOf(ctx.world, ctx.cell) === cond.v;
@@ -681,10 +684,10 @@ const REASON = {
   timeout: "The robots got stuck and the task failed.",
   "no-plan": "A rule is too restrictive, so a robot has no path.",
   incident: "A hazardous item was picked up before being scanned.",
-  jam: "A robot entered a machine without a permit, so the machine jammed.",
-  "resource-conflict": "Two robots tried to use the same machine at the same time.",
-  "machine-order": "A robot entered a machine before it was ready.",
-  "priority-violation": "A robot entered the machine square first in an unaccepted order.",
+  jam: "A robot entered a restricted exit without a permit.",
+  "resource-conflict": "Two robots tried to enter the same exit at the same time.",
+  "machine-order": "A robot entered an exit before it opened.",
+  "priority-violation": "A robot entered the exit first in an unaccepted order.",
 };
 
 function lastEvent(result){
@@ -707,13 +710,13 @@ function reasonText(reason, result=null){
   if(reason === "no-plan" && result?.blockedAgent !== undefined) return `A rule is too restrictive, so Robot ${result.blockedAgent} has no path.`;
   if(reason === "collision" && agents) return `${agents} collided.`;
   if(reason === "lane-blocked" && agents) return `${agents} could not pass in the single-lane branch.`;
-  if(reason === "resource-conflict" && agents) return `${agents} tried to use the same machine at the same time.`;
+  if(reason === "resource-conflict" && agents) return `${agents} tried to enter the same exit at the same time.`;
   if(reason === "incident" && agents) return `${agents} picked up a hazardous item before scanning it.`;
-  if(reason === "jam" && agents) return `${agents} entered a machine without a permit.`;
-  if(reason === "machine-order" && agents) return `${agents} entered the machine before it was ready.`;
+  if(reason === "jam" && agents) return `${agents} entered a restricted exit without a permit.`;
+  if(reason === "machine-order" && agents) return `${agents} entered the exit before it opened.`;
   if(reason === "priority-violation"){
     const entrant = event?.agent !== undefined ? `Robot ${event.agent}` : "A robot";
-    return `${entrant} entered the machine first in the wrong order.`;
+    return `${entrant} entered the exit first in the wrong order.`;
   }
   return REASON[reason] || reason || "The task failed.";
 }

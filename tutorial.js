@@ -1,7 +1,7 @@
 /* Pre-task tutorial for the curriculum version of Shared Rulebook.
  *
  * It teaches only the interface and the warehouse's base mechanics. Special
- * elements such as cold storage, machines, Cleaners, and Operators remain for
+ * elements such as cold storage, exits, Cleaners, and Operators remain for
  * the curriculum to introduce.
  */
 
@@ -162,7 +162,7 @@ const ALL_PAGES = [
     title:"Build, test, and refine a rule",
     lead:"Entering the marked square causes this practice scene to fail. Build a rule that prevents the robot from entering it.",
     points:[
-      "Choose an object, IS / IS NOT, and a fact; then select Add condition.",
+      "Choose an object and a fact; then select Add condition.",
       "Conditions within one rule are joined by AND, so all of them must be true.",
       "Every active rule applies to every robot in the scene.",
     ],
@@ -267,7 +267,6 @@ function rulePracticeResult(){
   const condition = state.practiceCondition;
   const blocksMarkedSquare =
     condition?.object === "practice" &&
-    condition?.operator === "IS" &&
     condition?.fact === "marked";
   const path = blocksMarkedSquare
     ? [[2,0],[2,1],[2,2],[1,2],[1,3],[1,4],[2,4],[2,5],[2,6]]
@@ -460,12 +459,6 @@ const PRACTICE_TERMS = {
   ],
 };
 
-function practiceConditionText(operator, term){
-  if(!term) return "";
-  if(operator === "IS") return term.text;
-  return term.text.replace(/\bis\b/, "is not");
-}
-
 function updateContinueState(){
   const requirement = PAGES[state.page].requires;
   el("tut-continue").disabled =
@@ -474,10 +467,9 @@ function updateContinueState(){
 
 function bindRulePractice(){
   const object = el("tut-practice-object");
-  const operator = el("tut-practice-operator");
   const fact = el("tut-practice-fact");
   const add = el("tut-practice-add");
-  if(!object || !operator || !fact || !add) return;
+  if(!object || !fact || !add) return;
 
   function updateFacts(){
     const terms = PRACTICE_TERMS[object.value] || [];
@@ -488,19 +480,17 @@ function bindRulePractice(){
   }
 
   function updateAdd(){
-    add.disabled = !(object.value && operator.value && fact.value);
+    add.disabled = !(object.value && fact.value);
   }
 
   object.onchange = updateFacts;
-  operator.onchange = updateAdd;
   fact.onchange = updateAdd;
   add.onclick = () => {
     const term = (PRACTICE_TERMS[object.value] || []).find(row => row.id === fact.value);
     state.practiceCondition = {
       object:object.value,
-      operator:operator.value,
       fact:fact.value,
-      text:practiceConditionText(operator.value, term),
+      text:term?.text || "",
     };
     state.practiceSolved = false;
     emit("tutorial_condition_created", {...state.practiceCondition});
@@ -513,7 +503,7 @@ function bindRulePractice(){
 function ruleReferenceMarkup(){
   const condition = state.practiceCondition;
   const step = !condition
-    ? {label:"Step 1", text:"Choose Practice object, IS, and marked. Then click Add condition."}
+    ? {label:"Step 1", text:"Choose Practice object and marked. Then click Add condition."}
     : !state.practiceSolved
       ? {label:"Step 2", text:"Click Run to test the rule."}
       : null;
@@ -537,10 +527,6 @@ function ruleReferenceMarkup(){
           <select id="tut-practice-object" aria-label="Condition object">
             <option value="">Select object</option>
             <option value="practice">Practice object</option>
-          </select>
-          <select id="tut-practice-operator" aria-label="Condition relation">
-            <option value="">Select relation</option>
-            <option value="IS">IS</option>
           </select>
           <select id="tut-practice-fact" aria-label="Condition fact" disabled>
             <option value="">Select fact</option>

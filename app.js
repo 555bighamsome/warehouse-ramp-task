@@ -30,11 +30,13 @@ const $ = id => document.getElementById(id);
 const URL_PARAMS = new URLSearchParams(window.location.search);
 const DEBUG_UI = URL_PARAMS.get("debug") === "1" ||
   window.location.hash.includes("debug");
-// The experimental task is sequential by default. Designers can inspect every
-// scene with ?order=free without changing the participant-facing flow.
-const ORDER_MODE = DEBUG_UI ? "free" : (URL_PARAMS.get("order") || "curriculum");
-const FREE_ORDER = ORDER_MODE === "free";
 const SKIP_TUTORIAL = URL_PARAMS.get("skipTutorial") === "1";
+// The experimental task is sequential by default. Designers can inspect every
+// scene with ?order=free or ?skipTutorial=1 without changing the participant flow.
+const ORDER_MODE = DEBUG_UI
+  ? "free"
+  : (URL_PARAMS.get("order") || (SKIP_TUTORIAL ? "free" : "curriculum"));
+const FREE_ORDER = ORDER_MODE === "free";
 const EDITOR_CONDITION = RAW_LIBRARY.condition === "fresh" ? "fresh" : "carry";
 
 function taskUnlocked(task){
@@ -113,7 +115,8 @@ function icon(name, extraClass=""){
   if(name === "spill") return `<svg ${base}><path ${fill} d="M12 2c3 4 6 7 6 11a6 6 0 1 1-12 0c0-4 3-7 6-11Z"/><path d="M12 9v4M12 16h.01" stroke="#fff" stroke-width="2.5" stroke-linecap="square"/></svg>`;
   if(name === "cold") return `<svg ${base}><path ${stroke} d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9M8 4.5l4 3 4-3M8 19.5l4-3 4 3"/></svg>`;
   if(name === "intersection") return `<svg ${base}><path ${fill} d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2Z"/></svg>`;
-  if(name === "machine") return `<svg ${base}><path ${fill} d="m9 2 3 2 3-2 2 3 3 1-.5 3.5L22 12l-2.5 2.5.5 3.5-3 1-2 3-3-2-3 2-2-3-3-1 .5-3.5L2 12l2.5-2.5L4 6l3-1 2-3Z"/><circle cx="12" cy="12" r="3.2" fill="#fff"/></svg>`;
+  if(name === "exit") return `<svg ${base}><path ${stroke} d="M13 4.5 21 3v18l-8-1.5V4.5ZM13 19.5H5V5h8M17 12h.01"/></svg>`;
+  if(name === "machine") return icon("exit", extraClass);
   if(name === "wall") return `<svg ${base}><path ${fill} d="M3 4h7v5H3V4Zm9 0h9v5h-9V4ZM3 11h4v5H3v-5Zm6 0h8v5H9v-5Zm10 0h2v5h-2v-5ZM3 18h9v3H3v-3Zm11 0h7v3h-7v-3Z"/></svg>`;
   if(name === "floor") return `<svg ${base}><rect ${stroke} x="4" y="4" width="16" height="16" stroke-width="1.5"/></svg>`;
   if(name === "reach") return `<svg ${base}><path ${fill} d="M10 2h4v7h7v4h-7v7h-4v-7H3V9h7V2Z"/></svg>`;
@@ -251,7 +254,7 @@ const SCENE_GUIDES = {
 
 const GUIDE_COPY = {
   cold:"",
-  machine:"A marked special square that serves one robot at a time. After use, the robot leaves the map and the square becomes available again.",
+  machine:"A marked exit that admits one robot at a time. After entering, the robot leaves the map and the exit becomes available again.",
   carrier:"",
   operator:"",
   cleaner:"Can carry a spill into cold storage without contamination.",
@@ -271,8 +274,8 @@ function sceneFeatureItems(task){
     {
       id:"machine",
       present:Object.keys(task.machines).length > 0,
-      iconName:"machine",
-      title:"Machine square",
+      iconName:"exit",
+      title:"Exit",
       detail:GUIDE_COPY.machine,
     },
     {
@@ -472,7 +475,7 @@ function switchTask(index){
     rules = (sceneRuleDrafts.get(sourceTask.id) || []).map(rule => cloneRule(rule));
     sceneRuleDrafts.set(scn.id, rules);
   }else{
-    rules = [];
+    rules = loadStarterRules(scn);
   }
   lastResult = null;
   lastFrames = [];
@@ -590,7 +593,7 @@ function buildBoard(){
     cell.dataset.cell = key;
     cell.setAttribute("aria-label", blocked
       ? "Wall"
-      : machineCellKeys.has(key) ? "Machine square" : (ZONE_ZH[visualZone] || visualZone));
+      : machineCellKeys.has(key) ? "Exit" : (ZONE_ZH[visualZone] || visualZone));
     if(!blocked){
       cell.innerHTML = zoneMarkup(visualZone);
     }
@@ -723,7 +726,7 @@ function stateClass(meta){
 function goalLabel(agent){
   const target = goalCell(scn, agent);
   if(agent.goal.kind === "deliver") return `deliver ${agent.goal.item} to (${target[0]}, ${target[1]})`;
-  if(agent.goal.kind === "operate") return `use the ${machineLabel(agent.goal.machine)}`;
+  if(agent.goal.kind === "operate") return `leave through the ${machineLabel(agent.goal.machine)}`;
   return `reach (${target[0]}, ${target[1]})`;
 }
 
@@ -810,32 +813,33 @@ function schemaProperty(objectId, propertyId){
 }
 
 function conditionText(cond){
-  const negated = !!cond.negated;
   if(cond.p === "target_type"){
-    return `the target square is${negated ? " not" : ""} ${cond.v === "cold" ? "cold storage" : "a machine square"}`;
+    const targetType = {
+      road:"an ordinary road square",
+      machine:"an exit",
+      cold:"cold storage",
+    }[cond.v] || cond.v;
+    return `the target square is ${targetType}`;
   }
   if(cond.p === "role"){
     const role = {carrier:"a Carrier", cleaner:"a Cleaner", operator:"an Operator"}[cond.v] || cond.v;
-    return `the robot is${negated ? " not" : ""} ${role}`;
+    return `the robot is ${role}`;
   }
   if(cond.p === "carrying"){
-    return `the robot is${negated ? " not" : ""} carrying a spill`;
+    return "the robot is carrying a spill";
   }
   if(cond.p === "move_dir"){
     const direction = {N:"north", S:"south", E:"east", W:"west"}[cond.v] || cond.v;
-    return `the robot is${negated ? " not" : ""} moving ${direction}`;
+    return `the robot is moving ${direction}`;
   }
   if(cond.p === "station_marker"){
     const marker = {red:"red", blue:"blue", green:"green"}[cond.v] || cond.v;
-    return `the target station is${negated ? " not" : ""} ${marker}`;
+    return `the target station is ${marker}`;
   }
   if(cond.p === "contested"){
-    return `the target square is${negated ? " not" : ""} being entered by multiple robots`;
+    return "the target square is being entered by multiple robots";
   }
-  if(cond.p === "role_not"){
-    return `the robot's role is not ${String(cond.v).toLowerCase()}`;
-  }
-  return cond.label || `${cond.p} ${negated ? "is not" : "is"} ${cond.v}`;
+  return cond.label || `${cond.p}: ${cond.v}`;
 }
 
 function displayCondition(_rule, cond){
@@ -848,7 +852,7 @@ function cloneCondition(cond){
     property:cond.property,
     p:cond.p,
     v:cond.v,
-    negated:!!cond.negated,
+    negated:false,
   };
 }
 
@@ -862,9 +866,27 @@ function cloneRule(rule, sourceLibraryId=null){
   };
 }
 
+function starterRulesFor(task){
+  return (task?.starter_rulebook || []).map(rule => cloneRule({
+    action:"MOVE",
+    conds:rule.conds || [],
+  }));
+}
+
+function loadStarterRules(task){
+  const starter = starterRulesFor(task);
+  if(!starter.length) return [];
+  sceneRuleDrafts.set(task.id, starter);
+  recordRuleEvent("starter_rulebook_loaded", {
+    starter_rule_ids:starter.map(rule => rule.id),
+    starter_rule_json:ruleJson(starter),
+  });
+  return starter;
+}
+
 function ruleSignature(rule){
   return rule.conds
-    .map(cond => `${cond.p}|${String(cond.v)}|${cond.negated ? 1 : 0}`)
+    .map(cond => `${cond.p}|${String(cond.v)}`)
     .sort()
     .join(";");
 }
@@ -973,7 +995,6 @@ function emptyConditionEditor(conditionIndex=null){
     conditionIndex,
     object:null,
     property:null,
-    operator:null,
     value:null,
   };
 }
@@ -1014,8 +1035,6 @@ function conditionPayload(cond){
     property:cond.property,
     predicate:cond.p,
     value:cond.v,
-    operator:cond.negated ? "IS_NOT" : "IS",
-    negated:!!cond.negated,
     text:conditionText(cond),
   };
 }
@@ -1076,24 +1095,6 @@ function renderConditionEditor(rule, card){
   objectSelect.setAttribute("aria-label", "Condition object");
   panel.appendChild(objectSelect);
 
-  const operatorSelect = editorSelect(
-    "typed-select operator-select",
-    "IS or IS NOT",
-    [{id:"IS", label:"IS"}, {id:"IS_NOT", label:"IS NOT"}],
-    editor.operator,
-    value => {
-      editor.operator = value || null;
-      recordRuleEvent("condition_field_selected", {
-        rule_id:rule.id,
-        field:"operator",
-        value:editor.operator,
-      });
-      renderRules();
-    }
-  );
-  operatorSelect.setAttribute("aria-label", "Condition relation");
-  panel.appendChild(operatorSelect);
-
   const terms = conditionTerms(object);
   const selectedTerm = editor.property === null
     ? null
@@ -1127,7 +1128,7 @@ function renderConditionEditor(rule, card){
   const save = document.createElement("button");
   save.className = "btn condition-save";
   save.textContent = editor.conditionIndex === null ? "Add" : "Save";
-  save.disabled = !object || !property || !editor.operator || editor.value === null;
+  save.disabled = !object || !property || editor.value === null;
   save.onclick = () => {
     const duplicatePropertyIndex = rule.conds.findIndex((existing, index) =>
       index !== editor.conditionIndex && existing.property === property.id
@@ -1141,7 +1142,7 @@ function renderConditionEditor(rule, card){
       property:property.id,
       p:property.predicate,
       v:editor.value,
-      negated:editor.operator === "IS_NOT",
+      negated:false,
     };
     const editing = editor.conditionIndex !== null;
     if(editing) rule.conds[editor.conditionIndex] = cond;
@@ -1248,7 +1249,6 @@ function renderRules(){
           conditionIndex:ci,
           object:cond.object,
           property:cond.property,
-          operator:cond.negated ? "IS_NOT" : "IS",
           value:cond.v,
         };
         recordRuleEvent("condition_editor_opened", {rule_id:rule.id, condition_index:ci, mode:"edit"});
@@ -1310,8 +1310,8 @@ function renderLegend(){
   const markerTiles = [...new Set(Object.values(scn.machines).map(machine => machine.marker || "plain"))]
     .map(marker => legendTile(
       `<span class="machine-sample marker-${marker}">${icon("machine")}</span>`,
-      marker === "plain" ? "Machine square" : `${marker[0].toUpperCase() + marker.slice(1)} machine square`,
-      marker === "plain" ? "A special square that serves one robot at a time" : "",
+      marker === "plain" ? "Exit" : `${marker[0].toUpperCase() + marker.slice(1)} exit`,
+      marker === "plain" ? "One robot can enter at a time" : "",
       `machine-tile marker-${marker}`,
     ));
   $("legend").innerHTML = `<section class="map-key compact-map-key" aria-labelledby="map-key-title"><h3 class="map-key-title" id="map-key-title">Key</h3><div class="legend-grid essential-key">${roleTiles}${markerTiles.join("")}</div></section>`;
@@ -1329,7 +1329,7 @@ function renderLegend(){
     0
   );
   $("vocab").innerHTML = [
-    `<div class="vocab-summary">Typed MOVE-rule space · ${atomicPredicateCount} atomic predicates · IS / IS NOT · up to ${MAX_RULE_CONDITIONS} conditions</div>`,
+    `<div class="vocab-summary">Typed MOVE-rule space · ${atomicPredicateCount} positive conditions · up to ${MAX_RULE_CONDITIONS} conditions</div>`,
     `<details class="vocab-detail"><summary>Show typed fields</summary><div>${conditionLines.join("<br>")}<br>Runs on this page = human attempts.</div></details>`
   ].join("");
 }
@@ -1351,9 +1351,7 @@ function ruleJson(sourceRules=rules){
         object:c.object,
         property:c.property,
         predicate:c.p,
-        operator:c.negated ? "IS_NOT" : "IS",
         value:c.v,
-        negated:!!c.negated,
         label:displayCondition(r, c),
       })),
     }));
@@ -1380,7 +1378,7 @@ function setStatus(text, kind){
 function feedbackCellType(cell){
   if(!cell) return "square";
   if(Object.values(scn.machines).some(machine => sameCell(machine.cell, cell))){
-    return "machine square";
+    return "exit";
   }
   const zone = scn.zones[K(cell[0], cell[1])];
   if(zone === "cold") return "cold-storage area";
@@ -1451,7 +1449,7 @@ function buildRunFeedback(result){
     const entrant = event?.agent !== undefined ? feedbackAgent(event.agent, frame) : "A robot";
     return {
       title:"That entry order did not work",
-      observation:`${entrant} entered the machine square first. Try the other entry order.`,
+      observation:`${entrant} entered the exit first. Try the other entry order.`,
       kind:"bad",
     };
   }
@@ -1476,8 +1474,8 @@ function buildRunFeedback(result){
   }
   if(result.reason === "machine-order"){
     return {
-      title:"The machine was not ready",
-      observation:`At step ${step}, ${robots} tried to use the machine too soon. Look back one step to see what needed to happen first.`,
+      title:"The exit was not open",
+      observation:`At step ${step}, ${robots} tried to enter the exit too soon. Look back one step to see what needed to happen first.`,
       kind:"bad",
     };
   }
@@ -1694,6 +1692,9 @@ function startTaskAfterTutorial(){
   lastAttemptAt = startTime;
   lastRuleEventIndex = ruleEvents.length;
   window.scrollTo(0, 0);
+  if(scn.starter_rulebook?.length){
+    setStatus("A starter rule is ready. Run it to begin, then edit it when the map changes.", "");
+  }
   if(shouldAutoShowGuide(scn)){
     setTimeout(() => showSceneGuide(), 0);
   }
@@ -1751,7 +1752,7 @@ if(!TASKS.length){
   };
   $("export-json").onclick = exportJson;
   $("export-csv").onclick = exportCsv;
-  rules = sceneRuleDrafts.get(scn.id) || [];
+  rules = sceneRuleDrafts.get(scn.id) || loadStarterRules(scn);
   renderAll();
   if(SKIP_TUTORIAL) startTaskAfterTutorial();
   else initializeTutorial();
