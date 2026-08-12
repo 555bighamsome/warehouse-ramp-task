@@ -971,6 +971,35 @@ button.btn.primary:hover{background:#444;border-color:#444;}
   font-size:12px;
   font-weight:600;
 }
+.rulebook-gate{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  padding:0 0 11px;
+  border-bottom:1px solid var(--line2);
+  color:var(--text);
+  line-height:1.4;
+}
+.rulebook-gate span,.rulebook-gate strong{
+  font-size:12px;
+  font-weight:750;
+}
+.rulebook-gate span{color:var(--accent);}
+.rule-or{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin:0;
+  color:var(--accent);
+  font-size:11px;
+  font-weight:800;
+}
+.rule-or::before,.rule-or::after{
+  content:"";
+  height:1px;
+  flex:1 1 auto;
+  background:var(--line2);
+}
 
 /* Fixed desktop workbench: keep the complete task in one viewport. */
 html,body{
@@ -1801,6 +1830,9 @@ body.tutorial-active{overflow:hidden;}
   border-bottom:1px solid #bfc4c9;
   background:#fff;
 }
+.tut-rule-gate{display:flex;align-items:baseline;gap:8px;padding:10px 0;border-bottom:1px solid #bfc4c9;}
+.tut-rule-gate span{color:#185fa5;font-size:11px;font-weight:800;}
+.tut-rule-gate strong{font-size:12px;}
 .tut-rule-action{display:flex;align-items:baseline;gap:9px;padding:13px 0 10px;border-bottom:1px solid #eceef0;}
 .tut-rule-action span{color:#a32d2d;font-size:11px;font-weight:800;letter-spacing:.05em;}
 .tut-rule-action strong{font-size:13px;letter-spacing:.01em;}

@@ -67,6 +67,7 @@ function makeScene(id, walls, agents){
       items:[],
       machines:[],
       scanners:[],
+      implicit_contested_gate:true,
       agents,
     },
   });
@@ -101,10 +102,12 @@ const COLLISION_SCENE = makeScene(
 
 const RULE_PRACTICE_SCENE = makeScene(
   "tutorial_rule_practice",
-  [[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6]],
-  [carrier(0, [2,0], [2,6])],
+  [[0,0],[0,1],[0,2],[0,4],[0,5],[0,6],[4,0],[4,1],[4,2],[4,4],[4,5],[4,6]],
+  [
+    carrier(0, [2,1], [2,5]),
+    carrier(1, [0,3], [4,3]),
+  ],
 );
-RULE_PRACTICE_SCENE.practiceMarked = [2,3];
 
 const RULE_REUSE_SCENE = makeScene(
   "tutorial_rule_reuse",
@@ -160,15 +163,15 @@ const ALL_PAGES = [
   {
     id:"rules",
     title:"Build, test, and refine a rule",
-    lead:"Entering the marked square causes this practice scene to fail. Build a rule that prevents the robot from entering it.",
+    lead:"These routes meet at the centre. Build a waiting rule that lets the robots pass safely.",
     points:[
       "Choose an object and a fact; then select Add condition.",
       "Conditions within one rule are joined by AND, so all of them must be true.",
-      "Every active rule applies to every robot in the scene.",
+      "Rules are checked only when multiple robots try to enter the same square.",
     ],
     scene:RULE_PRACTICE_SCENE,
     controls:true,
-    initialNote:"Press Run first, or build a rule and test it.",
+    initialNote:"Press Run first, or make the eastbound robot wait when the routes meet.",
     reference:"rule",
     requires:"practice_solved",
   },
@@ -265,29 +268,10 @@ function drawBoard(host, scene, frame=null){
 
 function rulePracticeResult(){
   const condition = state.practiceCondition;
-  const blocksMarkedSquare =
-    condition?.object === "practice" &&
-    condition?.fact === "marked";
-  const path = blocksMarkedSquare
-    ? [[2,0],[2,1],[2,2],[1,2],[1,3],[1,4],[2,4],[2,5],[2,6]]
-    : [[2,0],[2,1],[2,2],[2,3]];
-  const frames = path.map((position, index) => ({
-    pos:{0:position},
-    agents:{
-      0:{
-        done:blocksMarkedSquare && index === path.length - 1,
-        failed:!blocksMarkedSquare && index === path.length - 1,
-      },
-    },
-    event:!blocksMarkedSquare && index === path.length - 1
-      ? {type:"practice_marked", cell:[2,3], agent:0}
-      : null,
-  }));
-  return {
-    ok:blocksMarkedSquare,
-    reason:blocksMarkedSquare ? "ok" : "practice_marked",
-    frames,
-  };
+  const rules = condition?.object === "movement" && condition?.fact === "E"
+    ? [{action:"MOVE", conds:[{p:"move_dir", v:"E", negated:false}]}]
+    : [];
+  return simulate(RULE_PRACTICE_SCENE, rules);
 }
 
 function ruleReuseResult(){
@@ -454,8 +438,8 @@ function mapReferenceMarkup(){
 }
 
 const PRACTICE_TERMS = {
-  practice:[
-    {id:"marked", label:"marked", text:"the practice object is marked"},
+  movement:[
+    {id:"E", label:"eastbound", text:"the robot is moving east"},
   ],
 };
 
@@ -503,7 +487,7 @@ function bindRulePractice(){
 function ruleReferenceMarkup(){
   const condition = state.practiceCondition;
   const step = !condition
-    ? {label:"Step 1", text:"Choose Practice object and marked. Then click Add condition."}
+    ? {label:"Step 1", text:"Choose Movement and eastbound. Then click Add condition."}
     : !state.practiceSolved
       ? {label:"Step 2", text:"Click Run to test the rule."}
       : null;
@@ -514,19 +498,20 @@ function ruleReferenceMarkup(){
         <strong>${step.text}</strong>
       </div>
     ` : ""}
+    <div class="tut-rule-gate"><span>WHEN</span><strong>MULTIPLE ROBOTS TRY TO ENTER THE SAME SQUARE</strong></div>
     <div class="tut-rule-example tut-rule-builder" aria-label="Practice rule builder">
-      <div class="tut-rule-action"><span>FORBID</span><strong>MOVE INTO A SQUARE</strong></div>
+      <div class="tut-rule-action"><strong>A ROBOT MUST WAIT IF</strong></div>
       ${condition ? `
-        <div class="tut-rule-cond completed"><span>WHEN</span><b>${condition.text}</b></div>
+        <div class="tut-rule-cond completed"><span></span><b>${condition.text}</b></div>
         <div class="tut-practice-rule-actions">
           <button class="tut-change-condition" id="tut-change-condition" type="button">Change condition</button>
         </div>
       ` : `
         <div class="tut-practice-editor">
-          <span>WHEN</span>
+          <span></span>
           <select id="tut-practice-object" aria-label="Condition object">
             <option value="">Select object</option>
-            <option value="practice">Practice object</option>
+            <option value="movement">Movement</option>
           </select>
           <select id="tut-practice-fact" aria-label="Condition fact" disabled>
             <option value="">Select fact</option>
@@ -555,8 +540,8 @@ function libraryReferenceMarkup(){
         <section>
           <h3>Rule from the previous scene</h3>
           <div class="tut-library-rule">
-            <div><span>FORBID</span> MOVE INTO A SQUARE</div>
-            <div><span>WHEN</span> ${text}</div>
+            <div>A ROBOT MUST WAIT IF</div>
+            <div>${text}</div>
           </div>
           <button id="tut-save-practice" type="button">Save to library</button>
         </section>
@@ -579,15 +564,15 @@ function libraryReferenceMarkup(){
         <h3>Rules in this scene</h3>
         ${state.practiceUsed ? `
           <div class="tut-library-rule">
-            <div><span>FORBID</span> MOVE INTO A SQUARE</div>
-            <div><span>WHEN</span> ${text}</div>
+            <div>A ROBOT MUST WAIT IF</div>
+            <div>${text}</div>
           </div>
         ` : '<p class="tut-library-empty">No active rules.</p>'}
       </section>
       <section>
         <h3>Saved rule library</h3>
         <div class="tut-saved-row">
-          <span>FORBID MOVE INTO A SQUARE WHEN ${text}</span>
+          <span>A ROBOT MUST WAIT IF ${text}</span>
           <button class="${state.practiceUsed ? "" : "tut-next-action"}" id="tut-use-practice" type="button" ${state.practiceUsed ? "disabled" : ""}>
             ${state.practiceUsed ? "Added" : "Add to rulebook"}
           </button>

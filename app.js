@@ -173,7 +173,6 @@ function stateIconName(meta){
 const ROLE_SHORT_ZH = { carrier:"A", cleaner:"Cl", operator:"B" };
 const PROPERTY_LABELS = {
   target_type:"type",
-  contested:"state",
   station_marker:"marker",
   role:"role",
   carrying:"carrying",
@@ -836,9 +835,6 @@ function conditionText(cond){
     const marker = {red:"red", blue:"blue", green:"green"}[cond.v] || cond.v;
     return `the target station is ${marker}`;
   }
-  if(cond.p === "contested"){
-    return "the target square is being entered by multiple robots";
-  }
   return cond.label || `${cond.p}: ${cond.v}`;
 }
 
@@ -892,7 +888,7 @@ function ruleSignature(rule){
 }
 
 function ruleText(rule){
-  return `If ${rule.conds.map(c => displayCondition(rule, c)).join(" and ")}, then do not move into the square`;
+  return `A robot must wait if ${rule.conds.map(c => displayCondition(rule, c)).join(" and ")}`;
 }
 
 function saveRuleToLibrary(rule, ruleIndex){
@@ -1072,7 +1068,7 @@ function renderConditionEditor(rule, card){
     : editor.conditionIndex > 0;
   prefix.textContent = hasPreviousCondition
     ? "AND"
-    : "WHEN";
+    : "";
   panel.appendChild(prefix);
 
   const object = schemaObject(editor.object);
@@ -1184,15 +1180,23 @@ function renderRules(){
   let activeRuleNumber = 0;
 
   displayRules.forEach(({rule, sourceIndex}) => {
-    if(rule.conds.length > 0 && activeRuleNumber === 0){
-      const label = document.createElement("div");
-      label.className = "rule-group-label";
-      label.textContent = "Active rules";
-      box.appendChild(label);
+    if(rule.conds.length > 0){
+      if(activeRuleNumber === 0){
+        const label = document.createElement("div");
+        label.className = "rule-group-label";
+        label.textContent = "Waiting rules";
+        box.appendChild(label);
+      }else{
+        const separator = document.createElement("div");
+        separator.className = "rule-or";
+        separator.textContent = "OR";
+        box.appendChild(separator);
+      }
+      activeRuleNumber += 1;
     }
     const ruleLabel = rule.conds.length === 0
       ? ""
-      : `Rule ${++activeRuleNumber}`;
+      : `Rule ${activeRuleNumber}`;
     const card = document.createElement("div");
     card.className = "rule";
 
@@ -1227,7 +1231,7 @@ function renderRules(){
 
     const actionLine = document.createElement("div");
     actionLine.className = "rule-action-line";
-    actionLine.innerHTML = '<span class="kw2">FORBID</span><strong>MOVE INTO A SQUARE</strong>';
+    actionLine.innerHTML = '<strong>A ROBOT MUST WAIT IF</strong>';
     card.appendChild(actionLine);
 
     const conditions = document.createElement("div");
@@ -1237,7 +1241,7 @@ function renderRules(){
       row.className = "condition-row";
       const join = document.createElement("span");
       join.className = "condition-join";
-      join.textContent = ci === 0 ? "WHEN" : "AND";
+      join.textContent = ci === 0 ? "" : "AND";
       row.appendChild(join);
 
       const edit = document.createElement("button");
@@ -1329,7 +1333,7 @@ function renderLegend(){
     0
   );
   $("vocab").innerHTML = [
-    `<div class="vocab-summary">Typed MOVE-rule space · ${atomicPredicateCount} positive conditions · up to ${MAX_RULE_CONDITIONS} conditions</div>`,
+    `<div class="vocab-summary">Typed waiting-rule space · ${atomicPredicateCount} positive conditions · up to ${MAX_RULE_CONDITIONS} conditions</div>`,
     `<details class="vocab-detail"><summary>Show typed fields</summary><div>${conditionLines.join("<br>")}<br>Runs on this page = human attempts.</div></details>`
   ].join("");
 }
