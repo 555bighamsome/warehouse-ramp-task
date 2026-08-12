@@ -56,13 +56,11 @@ const OBJECT_IDS = {
   "Target square":"target",
   "Square being entered":"target",
   "Next square":"target",
-  "Situation":"situation",
   "Target station":"station",
   "Robot":"robot",
   "Robot type":"robot",
   "Robot role":"robot",
   "Movement":"movement",
-  "Movement direction":"movement",
 };
 const RULE_SCHEMA = Object.values((EXPORTED_RULE_SCHEMA.fields || []).reduce((groups, field) => {
   const objectId = OBJECT_IDS[field.object] || field.object.toLowerCase().replaceAll(" ", "-");
@@ -840,7 +838,7 @@ function conditionText(cond){
     return `the target station is ${marker}`;
   }
   if(cond.p === "contested"){
-    return "more than one robot is about to enter the same square";
+    return "the next square is being entered by multiple robots";
   }
   return cond.label || `${cond.p}: ${cond.v}`;
 }
@@ -1056,10 +1054,9 @@ function conditionTerms(object){
 }
 
 function termPlaceholder(objectId){
-  if(objectId === "situation") return "Choose what is happening";
-  if(objectId === "target") return "Choose what is true of it";
-  if(objectId === "robot") return "Choose a role";
-  if(objectId === "movement") return "Choose a direction";
+  if(objectId === "target") return "Choose square fact";
+  if(objectId === "robot") return "Choose robot fact";
+  if(objectId === "movement") return "Choose movement fact";
   return "Choose fact";
 }
 

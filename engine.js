@@ -30,7 +30,7 @@ const LABEL_ZH = {
   "role:carrier": "the robot is a Carrier",
   "role:cleaner": "the robot is a cleaner",
   "role:operator": "the robot is an Operator",
-  "contested:true": "more than one robot is about to enter the same square",
+  "contested:true": "the next square is being entered by multiple robots",
   "item_unscanned:true": "the item is unscanned",
   "item_colour:red": "the item is red",
   "item_colour:blue": "the item is blue",

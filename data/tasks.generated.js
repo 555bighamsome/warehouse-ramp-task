@@ -24,12 +24,12 @@ window.PARADIGM_LIBRARIES = {
       "fields": [
         {
           "id": "contested",
-          "object": "Situation",
+          "object": "Next square",
           "predicate": "contested",
           "values": [
             {
               "id": true,
-              "label": "more than one robot is about to enter the same square"
+              "label": "being entered by multiple robots"
             }
           ]
         },
@@ -65,7 +65,7 @@ window.PARADIGM_LIBRARIES = {
         },
         {
           "id": "move_dir",
-          "object": "Movement direction",
+          "object": "Movement",
           "predicate": "move_dir",
           "values": [
             {
@@ -98,12 +98,12 @@ window.PARADIGM_LIBRARIES = {
     ],
     "global_vocabulary": [
       {
-        "object": "Situation",
+        "object": "Next square",
         "property": "contested",
         "predicate": "contested",
         "value": true,
         "negated": false,
-        "label": "more than one robot is about to enter the same square"
+        "label": "being entered by multiple robots"
       },
       {
         "object": "Next square",
@@ -138,7 +138,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "Operator"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "N",
@@ -146,7 +146,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "northbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "S",
@@ -154,7 +154,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "southbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "E",
@@ -162,7 +162,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "eastbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "W",
@@ -173,12 +173,12 @@ window.PARADIGM_LIBRARIES = {
     "action_condition_space": {
       "MOVE": [
         {
-          "object": "Situation",
+          "object": "Next square",
           "property": "contested",
           "predicate": "contested",
           "value": true,
           "negated": false,
-          "label": "more than one robot is about to enter the same square"
+          "label": "being entered by multiple robots"
         },
         {
           "object": "Next square",
@@ -213,7 +213,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "Operator"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "N",
@@ -221,7 +221,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "northbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "S",
@@ -229,7 +229,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "southbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "E",
@@ -237,7 +237,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "eastbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "W",
@@ -423,14 +423,14 @@ window.PARADIGM_LIBRARIES = {
             "action": "MOVE",
             "conds": [
               {
-                "object": "situation",
+                "object": "Next square",
                 "property": "contested",
                 "p": "contested",
                 "v": true,
                 "negated": false
               },
               {
-                "object": "movement",
+                "object": "Movement",
                 "property": "move_dir",
                 "p": "move_dir",
                 "v": "N",
@@ -5490,12 +5490,12 @@ window.PARADIGM_LIBRARIES = {
       "fields": [
         {
           "id": "contested",
-          "object": "Situation",
+          "object": "Next square",
           "predicate": "contested",
           "values": [
             {
               "id": true,
-              "label": "more than one robot is about to enter the same square"
+              "label": "being entered by multiple robots"
             }
           ]
         },
@@ -5531,7 +5531,7 @@ window.PARADIGM_LIBRARIES = {
         },
         {
           "id": "move_dir",
-          "object": "Movement direction",
+          "object": "Movement",
           "predicate": "move_dir",
           "values": [
             {
@@ -5564,12 +5564,12 @@ window.PARADIGM_LIBRARIES = {
     ],
     "global_vocabulary": [
       {
-        "object": "Situation",
+        "object": "Next square",
         "property": "contested",
         "predicate": "contested",
         "value": true,
         "negated": false,
-        "label": "more than one robot is about to enter the same square"
+        "label": "being entered by multiple robots"
       },
       {
         "object": "Next square",
@@ -5604,7 +5604,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "Operator"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "N",
@@ -5612,7 +5612,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "northbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "S",
@@ -5620,7 +5620,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "southbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "E",
@@ -5628,7 +5628,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "eastbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "W",
@@ -5639,12 +5639,12 @@ window.PARADIGM_LIBRARIES = {
     "action_condition_space": {
       "MOVE": [
         {
-          "object": "Situation",
+          "object": "Next square",
           "property": "contested",
           "predicate": "contested",
           "value": true,
           "negated": false,
-          "label": "more than one robot is about to enter the same square"
+          "label": "being entered by multiple robots"
         },
         {
           "object": "Next square",
@@ -5679,7 +5679,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "Operator"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "N",
@@ -5687,7 +5687,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "northbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "S",
@@ -5695,7 +5695,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "southbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "E",
@@ -5703,7 +5703,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "eastbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "W",
@@ -5889,14 +5889,14 @@ window.PARADIGM_LIBRARIES = {
             "action": "MOVE",
             "conds": [
               {
-                "object": "situation",
+                "object": "Next square",
                 "property": "contested",
                 "p": "contested",
                 "v": true,
                 "negated": false
               },
               {
-                "object": "movement",
+                "object": "Movement",
                 "property": "move_dir",
                 "p": "move_dir",
                 "v": "N",
@@ -10956,12 +10956,12 @@ window.PARADIGM_LIBRARIES = {
       "fields": [
         {
           "id": "contested",
-          "object": "Situation",
+          "object": "Next square",
           "predicate": "contested",
           "values": [
             {
               "id": true,
-              "label": "more than one robot is about to enter the same square"
+              "label": "being entered by multiple robots"
             }
           ]
         },
@@ -10997,7 +10997,7 @@ window.PARADIGM_LIBRARIES = {
         },
         {
           "id": "move_dir",
-          "object": "Movement direction",
+          "object": "Movement",
           "predicate": "move_dir",
           "values": [
             {
@@ -11030,12 +11030,12 @@ window.PARADIGM_LIBRARIES = {
     ],
     "global_vocabulary": [
       {
-        "object": "Situation",
+        "object": "Next square",
         "property": "contested",
         "predicate": "contested",
         "value": true,
         "negated": false,
-        "label": "more than one robot is about to enter the same square"
+        "label": "being entered by multiple robots"
       },
       {
         "object": "Next square",
@@ -11070,7 +11070,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "Operator"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "N",
@@ -11078,7 +11078,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "northbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "S",
@@ -11086,7 +11086,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "southbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "E",
@@ -11094,7 +11094,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "eastbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "W",
@@ -11105,12 +11105,12 @@ window.PARADIGM_LIBRARIES = {
     "action_condition_space": {
       "MOVE": [
         {
-          "object": "Situation",
+          "object": "Next square",
           "property": "contested",
           "predicate": "contested",
           "value": true,
           "negated": false,
-          "label": "more than one robot is about to enter the same square"
+          "label": "being entered by multiple robots"
         },
         {
           "object": "Next square",
@@ -11145,7 +11145,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "Operator"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "N",
@@ -11153,7 +11153,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "northbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "S",
@@ -11161,7 +11161,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "southbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "E",
@@ -11169,7 +11169,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "eastbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "W",
@@ -11355,14 +11355,14 @@ window.PARADIGM_LIBRARIES = {
             "action": "MOVE",
             "conds": [
               {
-                "object": "situation",
+                "object": "Next square",
                 "property": "contested",
                 "p": "contested",
                 "v": true,
                 "negated": false
               },
               {
-                "object": "movement",
+                "object": "Movement",
                 "property": "move_dir",
                 "p": "move_dir",
                 "v": "N",
@@ -25461,12 +25461,12 @@ window.PARADIGM_LIBRARIES = {
       "fields": [
         {
           "id": "contested",
-          "object": "Situation",
+          "object": "Next square",
           "predicate": "contested",
           "values": [
             {
               "id": true,
-              "label": "more than one robot is about to enter the same square"
+              "label": "being entered by multiple robots"
             }
           ]
         },
@@ -25502,7 +25502,7 @@ window.PARADIGM_LIBRARIES = {
         },
         {
           "id": "move_dir",
-          "object": "Movement direction",
+          "object": "Movement",
           "predicate": "move_dir",
           "values": [
             {
@@ -25535,12 +25535,12 @@ window.PARADIGM_LIBRARIES = {
     ],
     "global_vocabulary": [
       {
-        "object": "Situation",
+        "object": "Next square",
         "property": "contested",
         "predicate": "contested",
         "value": true,
         "negated": false,
-        "label": "more than one robot is about to enter the same square"
+        "label": "being entered by multiple robots"
       },
       {
         "object": "Next square",
@@ -25575,7 +25575,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "Operator"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "N",
@@ -25583,7 +25583,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "northbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "S",
@@ -25591,7 +25591,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "southbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "E",
@@ -25599,7 +25599,7 @@ window.PARADIGM_LIBRARIES = {
         "label": "eastbound"
       },
       {
-        "object": "Movement direction",
+        "object": "Movement",
         "property": "move_dir",
         "predicate": "move_dir",
         "value": "W",
@@ -25610,12 +25610,12 @@ window.PARADIGM_LIBRARIES = {
     "action_condition_space": {
       "MOVE": [
         {
-          "object": "Situation",
+          "object": "Next square",
           "property": "contested",
           "predicate": "contested",
           "value": true,
           "negated": false,
-          "label": "more than one robot is about to enter the same square"
+          "label": "being entered by multiple robots"
         },
         {
           "object": "Next square",
@@ -25650,7 +25650,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "Operator"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "N",
@@ -25658,7 +25658,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "northbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "S",
@@ -25666,7 +25666,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "southbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "E",
@@ -25674,7 +25674,7 @@ window.PARADIGM_LIBRARIES = {
           "label": "eastbound"
         },
         {
-          "object": "Movement direction",
+          "object": "Movement",
           "property": "move_dir",
           "predicate": "move_dir",
           "value": "W",
@@ -25860,14 +25860,14 @@ window.PARADIGM_LIBRARIES = {
             "action": "MOVE",
             "conds": [
               {
-                "object": "situation",
+                "object": "Next square",
                 "property": "contested",
                 "p": "contested",
                 "v": true,
                 "negated": false
               },
               {
-                "object": "movement",
+                "object": "Movement",
                 "property": "move_dir",
                 "p": "move_dir",
                 "v": "N",
