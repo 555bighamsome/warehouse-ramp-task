@@ -55,11 +55,14 @@ const MAX_RULE_CONDITIONS = EXPORTED_RULE_SCHEMA.max_conditions || 3;
 const OBJECT_IDS = {
   "Target square":"target",
   "Square being entered":"target",
+  "Next square":"target",
+  "Situation":"situation",
   "Target station":"station",
   "Robot":"robot",
   "Robot type":"robot",
   "Robot role":"robot",
   "Movement":"movement",
+  "Movement direction":"movement",
 };
 const RULE_SCHEMA = Object.values((EXPORTED_RULE_SCHEMA.fields || []).reduce((groups, field) => {
   const objectId = OBJECT_IDS[field.object] || field.object.toLowerCase().replaceAll(" ", "-");
@@ -819,7 +822,7 @@ function conditionText(cond){
       machine:"an exit",
       cold:"cold storage",
     }[cond.v] || cond.v;
-    return `the target square is ${targetType}`;
+    return `the next square is ${targetType}`;
   }
   if(cond.p === "role"){
     const role = {carrier:"a Carrier", cleaner:"a Cleaner", operator:"an Operator"}[cond.v] || cond.v;
@@ -837,7 +840,7 @@ function conditionText(cond){
     return `the target station is ${marker}`;
   }
   if(cond.p === "contested"){
-    return "the target square is being entered by multiple robots";
+    return "more than one robot is about to enter the same square";
   }
   return cond.label || `${cond.p}: ${cond.v}`;
 }
@@ -1053,9 +1056,10 @@ function conditionTerms(object){
 }
 
 function termPlaceholder(objectId){
-  if(objectId === "target") return "Choose target fact";
-  if(objectId === "robot") return "Choose robot fact";
-  if(objectId === "movement") return "Choose movement fact";
+  if(objectId === "situation") return "Choose what is happening";
+  if(objectId === "target") return "Choose what is true of it";
+  if(objectId === "robot") return "Choose a role";
+  if(objectId === "movement") return "Choose a direction";
   return "Choose fact";
 }
 
