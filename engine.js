@@ -30,7 +30,7 @@ const LABEL_ZH = {
   "role:carrier": "the robot is a Carrier",
   "role:cleaner": "the robot is a cleaner",
   "role:operator": "the robot is an Operator",
-  "contested:true": "the next square is being entered by multiple robots",
+  "contested:true": "the movement conflicts with another robot",
   "item_unscanned:true": "the item is unscanned",
   "item_colour:red": "the item is red",
   "item_colour:blue": "the item is blue",
@@ -88,6 +88,23 @@ function normalizeTask(task){
   (task.world.machines || []).forEach(machine => {
     machines[machine.id] = { ...machine, cell:machine.cell.slice() };
   });
+  const passages = {};
+  const passageCells = new Set();
+  const passageEntrances = new Set();
+  const passageByCell = {};
+  (task.world.passages || []).forEach(passage => {
+    passages[passage.id] = {
+      ...passage,
+      cells:passage.cells.map(cell => cell.slice()),
+      entrances:(passage.entrances || []).map(cell => cell.slice()),
+    };
+    passage.cells.forEach(cell => {
+      const key = K(cell[0], cell[1]);
+      passageCells.add(key);
+      passageByCell[key] = passage.id;
+    });
+    (passage.entrances || []).forEach(cell => passageEntrances.add(K(cell[0], cell[1])));
+  });
   const scanners = new Set((task.world.scanners || []).map(c => K(c[0], c[1])));
   return {
     id: task.id,
@@ -111,6 +128,10 @@ function normalizeTask(task){
     protected: task.world.protected,
     items,
     machines,
+    passages,
+    passageCells,
+    passageEntrances,
+    passageByCell,
     scanners,
     priorityRole: task.world.priority_role || null,
     agents: task.world.agents.map(a => ({
@@ -165,8 +186,10 @@ function eventAgentIds(event){
 function atom(ctx, cond){
   if(cond.p === "target_type"){
     const atMachine = Object.values(ctx.world.machines).some(machine => sameCell(machine.cell, ctx.cell));
+    const atPassage = ctx.world.passageCells.has(K(ctx.cell[0], ctx.cell[1]));
     if(cond.v === "machine") return atMachine;
-    if(cond.v === "road") return !atMachine;
+    if(cond.v === "passage") return atPassage;
+    if(cond.v === "road") return !atMachine && !atPassage;
     return zoneOf(ctx.world, ctx.cell) === cond.v;
   }
   if(cond.p === "dest_zone") return zoneOf(ctx.world, ctx.cell) === cond.v;
@@ -383,6 +406,10 @@ function simulate(scn, rules){
     protected:scn.protected,
     items:JSON.parse(JSON.stringify(scn.items)),
     machines:scn.machines,
+    passages:scn.passages,
+    passageCells:scn.passageCells,
+    passageEntrances:scn.passageEntrances,
+    passageByCell:scn.passageByCell,
     scanners:scn.scanners,
     priorityRole:scn.priorityRole,
   };
@@ -450,8 +477,19 @@ function simulate(scn, rules){
       else intend[id] = { kind:step.kind, cell:pos[id], dir:null, item:step.item, machine:step.machine };
     }
 
+    const entryPassages = {};
+    for(const agent of scn.agents){
+      const id = agent.id;
+      const it = intend[id];
+      if(it.kind !== "move") continue;
+      const passageId = world.passageByCell[K(it.cell[0], it.cell[1])];
+      const currentPassageId = world.passageByCell[K(pos[id][0], pos[id][1])];
+      if(passageId && currentPassageId !== passageId) entryPassages[id] = passageId;
+    }
+
     const targetKey = id => {
       const it = intend[id];
+      if(entryPassages[id]) return "passage:" + entryPassages[id];
       if(it.kind === "move") return "cell:" + K(it.cell[0], it.cell[1]);
       return "self:" + id;
     };
@@ -488,6 +526,45 @@ function simulate(scn, rules){
         contested,
       };
       if(it.kind !== "stay" && dynamicNorms.some(n => matchesNorm(n, ctx))) blocked.add(id);
+    }
+
+    // Once a robot enters a narrow passage, external entrants queue until all
+    // of its marked squares are clear.
+    const occupiedPassages = {};
+    for(const agent of scn.agents){
+      const id = agent.id;
+      if(released.has(id)) continue;
+      const passageId = world.passageByCell[K(pos[id][0], pos[id][1])];
+      if(!passageId) continue;
+      occupiedPassages[passageId] = occupiedPassages[passageId] || [];
+      occupiedPassages[passageId].push(id);
+    }
+    Object.entries(entryPassages).forEach(([id, passageId]) => {
+      if(occupiedPassages[passageId]?.length) blocked.add(Number(id));
+    });
+
+    const passageEntries = {};
+    Object.entries(entryPassages).forEach(([id, passageId]) => {
+      const numericId = Number(id);
+      if(blocked.has(numericId) || blocked.has(id)) return;
+      passageEntries[passageId] = passageEntries[passageId] || [];
+      passageEntries[passageId].push(numericId);
+    });
+    const contestedPassageId = Object.keys(passageEntries)
+      .find(passageId => passageEntries[passageId].length > 1);
+    if(contestedPassageId){
+      const passage = world.passages[contestedPassageId];
+      const cell = passage.cells[Math.floor(passage.cells.length / 2)];
+      return {
+        ok:false,
+        reason:"passage-conflict",
+        frames:[...frames, snapshot(scn, pos, {
+          type:"passage-conflict",
+          cell,
+          agents:passageEntries[contestedPassageId],
+          passage:contestedPassageId,
+        }, {plans, ptr, intend, blocked, released, tick:t + 1})],
+      };
     }
 
     // A fixed role order applies only at machines. Ordinary roads are governed
@@ -610,7 +687,6 @@ function simulate(scn, rules){
     }
 
     Object.keys(final).forEach(id => { pos[id] = final[id]; });
-
     for(const agent of scn.agents){
       const id = agent.id;
       if(done(id) || blocked.has(id)) continue;
@@ -680,14 +756,15 @@ function simulate(scn, rules){
 const REASON = {
   ok: "All robots completed their targets.",
   collision: "Two robots collided.",
+  "passage-conflict": "Two robots entered the narrow passage from opposite ends.",
   "lane-blocked": "A robot stopped in the near destination and blocked the single-lane branch.",
   timeout: "The robots got stuck and the task failed.",
   "no-plan": "A rule is too restrictive, so a robot has no path.",
   incident: "A hazardous item was picked up before being scanned.",
   jam: "A robot entered a restricted exit without a permit.",
-  "resource-conflict": "Two robots tried to enter the same exit at the same time.",
+  "resource-conflict": "Two robots tried to enter the same exit together; the exit accepts one robot at a time in a particular order.",
   "machine-order": "A robot entered an exit before it opened.",
-  "priority-violation": "A robot entered the exit first in an unaccepted order.",
+  "priority-violation": "A robot entered first, but the exit requires the other robot to enter first.",
 };
 
 function lastEvent(result){
@@ -709,14 +786,15 @@ function reasonText(reason, result=null){
   }
   if(reason === "no-plan" && result?.blockedAgent !== undefined) return `A rule is too restrictive, so Robot ${result.blockedAgent} has no path.`;
   if(reason === "collision" && agents) return `${agents} collided.`;
+  if(reason === "passage-conflict" && agents) return `${agents} entered the narrow passage from opposite ends.`;
   if(reason === "lane-blocked" && agents) return `${agents} could not pass in the single-lane branch.`;
-  if(reason === "resource-conflict" && agents) return `${agents} tried to enter the same exit at the same time.`;
+  if(reason === "resource-conflict" && agents) return `${agents} tried to enter the same exit together; the exit accepts one robot at a time in a particular order.`;
   if(reason === "incident" && agents) return `${agents} picked up a hazardous item before scanning it.`;
   if(reason === "jam" && agents) return `${agents} entered a restricted exit without a permit.`;
   if(reason === "machine-order" && agents) return `${agents} entered the exit before it opened.`;
   if(reason === "priority-violation"){
     const entrant = event?.agent !== undefined ? `Robot ${event.agent}` : "A robot";
-    return `${entrant} entered the exit first in the wrong order.`;
+    return `${entrant} entered first, but the exit requires the other robot to enter first.`;
   }
   return REASON[reason] || reason || "The task failed.";
 }

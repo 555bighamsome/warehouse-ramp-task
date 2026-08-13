@@ -56,6 +56,7 @@ const OBJECT_IDS = {
   "Target square":"target",
   "Square being entered":"target",
   "Next square":"target",
+  "Traffic":"traffic",
   "Target station":"station",
   "Robot":"robot",
   "Robot type":"robot",
@@ -116,6 +117,7 @@ function icon(name, extraClass=""){
   if(name === "spill") return `<svg ${base}><path ${fill} d="M12 2c3 4 6 7 6 11a6 6 0 1 1-12 0c0-4 3-7 6-11Z"/><path d="M12 9v4M12 16h.01" stroke="#fff" stroke-width="2.5" stroke-linecap="square"/></svg>`;
   if(name === "cold") return `<svg ${base}><path ${stroke} d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9M8 4.5l4 3 4-3M8 19.5l4-3 4 3"/></svg>`;
   if(name === "intersection") return `<svg ${base}><path ${fill} d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2Z"/></svg>`;
+  if(name === "passage") return `<svg ${base}><path ${stroke} d="M5 3v18M19 3v18M8 7h8M8 12h8M8 17h8"/></svg>`;
   if(name === "exit") return `<svg ${base}><path ${stroke} d="M13 4.5 21 3v18l-8-1.5V4.5ZM13 19.5H5V5h8M17 12h.01"/></svg>`;
   if(name === "machine") return icon("exit", extraClass);
   if(name === "wall") return `<svg ${base}><path ${fill} d="M3 4h7v5H3V4Zm9 0h9v5h-9V4ZM3 11h4v5H3v-5Zm6 0h8v5H9v-5Zm10 0h2v5h-2v-5ZM3 18h9v3H3v-3Zm11 0h7v3h-7v-3Z"/></svg>`;
@@ -243,12 +245,12 @@ const introducedFeatures = new Set();
 const SCENE_GUIDES = {
   trial_1: {
     title:"When paths meet",
-    body:"Robots cannot enter the same square together. On a single-lane branch, fill the far destination before the near one.",
+    body:"Robots cannot enter the same square together.",
   },
-  trial_3: {
+  trial_2: {
     title:"New map element",
   },
-  trial_5: {
+  trial_3: {
     title:"New map element",
   },
 };
@@ -256,6 +258,7 @@ const SCENE_GUIDES = {
 const GUIDE_COPY = {
   cold:"",
   machine:"A marked exit that admits one robot at a time. After entering, the robot leaves the map and the exit becomes available again.",
+  passage:"Only one robot can be inside the marked passage at a time.",
   carrier:"",
   operator:"",
   cleaner:"Can carry a spill into cold storage without contamination.",
@@ -271,6 +274,13 @@ function sceneFeatureItems(task){
       iconName:"cold",
       title:"Cold storage square",
       detail:GUIDE_COPY.cold,
+    },
+    {
+      id:"passage",
+      present:Object.keys(task.passages).length > 0,
+      iconName:"passage",
+      title:"Narrow passage",
+      detail:GUIDE_COPY.passage,
     },
     {
       id:"machine",
@@ -389,9 +399,12 @@ function sceneFullMapMarkup(task){
       const agents = task.agents.filter(agent => agent.active && sameCell(agent.pos, [row, col]));
       const items = Object.values(task.items).filter(item => K(item.cell[0], item.cell[1]) === key);
       const machine = machines.get(key);
+      const passage = task.passageCells.has(key);
       const feature = machine
         ? `<span class="picker-machine marker-${machine.marker || "plain"}"><span class="picker-machine-icon">${icon("machine")}</span></span>`
-        : "";
+        : passage
+          ? `<span class="picker-passage" aria-hidden="true"></span>`
+          : "";
       const itemMarkup = items.map(item => `<span class="picker-item item-${item.colour}" aria-hidden="true"></span>`).join("");
       const targetMarkup = (targets.get(key) || []).map((agent, targetIndex) =>
         `<span class="picker-target picker-target-${targetIndex % 4}${machines.has(key) ? ` picker-target-on-machine picker-target-on-machine-${targetIndex % 4}` : ""}" style="--agent-color:${agentColor(agent)}" aria-hidden="true"><span class="picker-target-label picker-target-label-${targetIndex % 4}">${agentDisplayId(agent.id)}</span></span>`
@@ -400,7 +413,7 @@ function sceneFullMapMarkup(task){
         `<span class="picker-agent ${agents.length > 1 ? "picker-agent-multi" : ""} picker-agent-index-${agentIndex}" style="--agent-color:${agentColor(agent)}" aria-hidden="true">${icon(roleIconName(agent.role), "picker-agent-icon")}<span class="picker-agent-id">${agentDisplayId(agent.id)}</span>${agent.goal?.kind === "operate" ? icon("machine", "picker-goal-badge") : ""}${agent.carrying === "spill" ? icon("spill", "picker-carry-icon") : ""}</span>`
       ).join("");
       const zoneMarkupText = !wall && zone === "cold" ? zoneMarkup("cold") : "";
-      cells.push(`<span class="picker-map-cell ${wall ? "picker-map-wall" : `picker-map-${zone}`}" aria-hidden="true">${wall ? "" : zoneMarkupText + feature + itemMarkup + targetMarkup + agentMarkup}</span>`);
+      cells.push(`<span class="picker-map-cell ${wall ? "picker-map-wall" : `picker-map-${zone}${passage ? " picker-passage-square" : ""}`}" aria-hidden="true">${wall ? "" : zoneMarkupText + feature + itemMarkup + targetMarkup + agentMarkup}</span>`);
     }
   }
   return `<span class="scene-full-map" style="--map-cols:${task.cols};--map-rows:${task.rows}">${cells.join("")}</span>`;
@@ -420,6 +433,8 @@ function renderScenePickerKey(){
   const environmentTiles = [
     ["floor", "Available square"],
     ["wall", "Wall"],
+    ["passage", "Narrow passage"],
+    ["exit", "Exit"],
   ].map(([iconName, label]) =>
     `<div class="picker-key-tile"><span class="picker-key-symbol ${iconName}-symbol">${icon(iconName)}</span><span>${label}</span></div>`
   ).join("");
@@ -461,22 +476,15 @@ function switchTask(index){
   if(!taskUnlocked(TASKS[index])) return;
   const sourceIndex = curIndex;
   const sourceTask = scn;
-  sceneRuleDrafts.set(scn.id, rules);
+  if(EDITOR_CONDITION === "fresh"){
+    sceneRuleDrafts.set(scn.id, rules);
+  }
   curIndex = index;
   scn = TASKS[curIndex];
-  const existingDraft = sceneRuleDrafts.get(scn.id);
-  const canCarryForward =
-    EDITOR_CONDITION === "carry" &&
-    !existingDraft &&
-    index === sourceIndex + 1 &&
-    shiftStates[sourceTask.id].lastOk === true;
-  if(existingDraft){
-    rules = existingDraft;
-  }else if(canCarryForward){
-    rules = (sceneRuleDrafts.get(sourceTask.id) || []).map(rule => cloneRule(rule));
-    sceneRuleDrafts.set(scn.id, rules);
-  }else{
-    rules = loadStarterRules(scn);
+  const carriesActiveRulebook = EDITOR_CONDITION === "carry";
+  if(!carriesActiveRulebook){
+    const existingDraft = sceneRuleDrafts.get(scn.id);
+    rules = existingDraft || loadStarterRules(scn);
   }
   lastResult = null;
   lastFrames = [];
@@ -488,17 +496,18 @@ function switchTask(index){
     selected_shift_index:index,
     previously_visited:shiftStates[scn.id].visited,
   });
-  if(canCarryForward){
-    recordRuleEvent("successful_rules_carried_over", {
+  if(carriesActiveRulebook){
+    recordRuleEvent("rulebook_carried_over", {
       source_shift_id:sourceTask.id,
       source_shift_index:sourceIndex,
+      source_was_successful:shiftStates[sourceTask.id].lastOk === true,
       carried_rule_ids:rules.map(rule => rule.id),
       carried_rule_json:ruleJson(),
     });
   }
   renderAll();
-  if(canCarryForward){
-    setStatus("The successful rules from the previous scene are ready to edit.", "");
+  if(carriesActiveRulebook){
+    setStatus("The current rulebook is ready to edit on this scene.", "");
   }
   if(shouldAutoShowGuide(scn)){
     setTimeout(() => showSceneGuide(), 0);
@@ -577,6 +586,8 @@ function buildBoard(){
   const machineCellKeys = new Set(
     Object.values(scn.machines).map(machine => K(machine.cell[0], machine.cell[1]))
   );
+  const passageCellKeys = scn.passageCells;
+  const passageEntranceKeys = scn.passageEntrances;
 
   for(let r=0; r<scn.rows; r++) for(let c=0; c<scn.cols; c++){
     const key = K(r,c);
@@ -586,7 +597,10 @@ function buildBoard(){
     const cell = document.createElement("div");
     cell.className = blocked
       ? `cell wall${r % 2 ? " wall-row-offset" : ""}`
-      : "cell zone-" + visualZone + (machineCellKeys.has(key) ? " machine-square-cell" : "");
+      : "cell zone-" + visualZone
+        + (machineCellKeys.has(key) ? " machine-square-cell" : "")
+        + (passageCellKeys.has(key) ? " passage-square-cell" : "")
+        + (passageEntranceKeys.has(key) ? " passage-entrance-cell" : "");
     cell.style.left = (c * CELL) + "px";
     cell.style.top = (r * CELL) + "px";
     cell.style.width = (blocked ? CELL : CELL - 4) + "px";
@@ -594,7 +608,11 @@ function buildBoard(){
     cell.dataset.cell = key;
     cell.setAttribute("aria-label", blocked
       ? "Wall"
-      : machineCellKeys.has(key) ? "Exit" : (ZONE_ZH[visualZone] || visualZone));
+      : machineCellKeys.has(key)
+        ? "Exit"
+        : passageCellKeys.has(key)
+          ? "Narrow passage"
+          : (ZONE_ZH[visualZone] || visualZone));
     if(!blocked){
       cell.innerHTML = zoneMarkup(visualZone);
     }
@@ -817,6 +835,7 @@ function conditionText(cond){
   if(cond.p === "target_type"){
     const targetType = {
       road:"an ordinary road square",
+      passage:"a narrow-passage square",
       machine:"an exit",
       cold:"cold storage",
     }[cond.v] || cond.v;
@@ -838,7 +857,7 @@ function conditionText(cond){
     return `the target station is ${marker}`;
   }
   if(cond.p === "contested"){
-    return "the next square is being entered by multiple robots";
+    return "the robot's movement conflicts with another robot";
   }
   return cond.label || `${cond.p}: ${cond.v}`;
 }
@@ -865,6 +884,34 @@ function cloneRule(rule, sourceLibraryId=null){
     editor:null,
     sourceLibraryId,
   };
+}
+
+function duplicateRuleForEdit(rule, sourceIndex){
+  if(!rule.conds.length){
+    showNotice("Add a condition before duplicating this rule.");
+    return;
+  }
+  const duplicate = cloneRule(rule, rule.sourceLibraryId || null);
+  const preferredIndex = Math.max(
+    0,
+    duplicate.conds.findIndex(condition => condition.p === "move_dir" || condition.p === "role"),
+  );
+  const condition = duplicate.conds[preferredIndex];
+  duplicate.editor = {
+    conditionIndex:preferredIndex,
+    object:condition.object,
+    property:condition.property,
+    value:condition.v,
+  };
+  rules.push(duplicate);
+  recordRuleEvent("rule_duplicated_for_edit", {
+    source_rule_id:rule.id,
+    source_rule_index:sourceIndex,
+    rule_id:duplicate.id,
+    rule_index:rules.length - 1,
+    condition_index:preferredIndex,
+  });
+  renderRules();
 }
 
 function starterRulesFor(task){
@@ -1202,6 +1249,15 @@ function renderRules(){
     header.innerHTML = ruleLabel ? `<strong>${ruleLabel}</strong>` : "";
     const actions = document.createElement("div");
     actions.className = "rule-actions";
+    const duplicate = document.createElement("button");
+    duplicate.className = "duplicate-rule";
+    duplicate.textContent = "Duplicate";
+    duplicate.title = rule.conds.length
+      ? "Copy this rule and change one condition"
+      : "Add a condition before duplicating";
+    duplicate.disabled = !rule.conds.length;
+    duplicate.onclick = () => duplicateRuleForEdit(rule, sourceIndex);
+    actions.appendChild(duplicate);
     const save = document.createElement("button");
     save.className = "save-rule";
     save.textContent = "Save to library";
@@ -1315,7 +1371,15 @@ function renderLegend(){
       marker === "plain" ? "One robot can enter at a time" : "",
       `machine-tile marker-${marker}`,
     ));
-  $("legend").innerHTML = `<section class="map-key compact-map-key" aria-labelledby="map-key-title"><h3 class="map-key-title" id="map-key-title">Key</h3><div class="legend-grid essential-key">${roleTiles}${markerTiles.join("")}</div></section>`;
+  const passageTile = Object.keys(scn.passages).length
+    ? legendTile(
+        `<span class="passage-sample">${icon("passage")}</span>`,
+        "Narrow passage",
+        "One robot inside at a time",
+        "passage-tile",
+      )
+    : "";
+  $("legend").innerHTML = `<section class="map-key compact-map-key" aria-labelledby="map-key-title"><h3 class="map-key-title" id="map-key-title">Key</h3><div class="legend-grid essential-key">${roleTiles}${passageTile}${markerTiles.join("")}</div></section>`;
   const conditionLines = RULE_SCHEMA.map(object => {
     const fields = object.properties.map(property =>
       `${property.label}: ${property.values.map(value => value.label).join(" / ")}`
@@ -1381,6 +1445,7 @@ function feedbackCellType(cell){
   if(Object.values(scn.machines).some(machine => sameCell(machine.cell, cell))){
     return "exit";
   }
+  if(scn.passageCells.has(K(cell[0], cell[1]))) return "narrow passage";
   const zone = scn.zones[K(cell[0], cell[1])];
   if(zone === "cold") return "cold-storage area";
   return "route square";
@@ -1427,9 +1492,23 @@ function buildRunFeedback(result){
     };
   }
   if(result.reason === "collision" || result.reason === "resource-conflict"){
+    if(square === "exit"){
+      return {
+        title:"This exit has an entry order",
+        observation:`At step ${step}, ${robots} tried to enter the exit together. Only one robot can enter at a time, and the exit accepts them in a particular order. Make one robot wait and try again.`,
+        kind:"bad",
+      };
+    }
     return {
       title:"They met at the same time",
       observation:`At step ${step}, ${robots} both tried to enter the same ${square}. Look back one step to see where one of them could have waited.`,
+      kind:"bad",
+    };
+  }
+  if(result.reason === "passage-conflict"){
+    return {
+      title:"They entered from both ends",
+      observation:`At step ${step}, ${robots} entered the narrow passage at the same time. Only one robot can be inside it, so choose one to wait at the entrance.`,
       kind:"bad",
     };
   }
@@ -1449,8 +1528,8 @@ function buildRunFeedback(result){
   if(result.reason === "priority-violation"){
     const entrant = event?.agent !== undefined ? feedbackAgent(event.agent, frame) : "A robot";
     return {
-      title:"That entry order did not work",
-      observation:`${entrant} entered the exit first. Try the other entry order.`,
+      title:"This exit has an entry order",
+      observation:`At step ${step}, ${entrant} entered the exit first, but the exit accepts the other robot first. Change which robot waits and try again.`,
       kind:"bad",
     };
   }
