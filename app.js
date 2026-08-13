@@ -201,6 +201,10 @@ function roleLegendAvatar(role, extraClass=""){
   return `<span class="agent-avatar role-key-avatar ${extraClass}" style="--agent-color:${roleColor(role)}">${icon(roleIconName(role), "agent-avatar-icon")}</span>`;
 }
 
+function passageMapSample(extraClass=""){
+  return `<span class="passage-map-sample ${extraClass}" aria-hidden="true"></span>`;
+}
+
 function roleBadge(agent, className=""){
   return `<span class="role-badge role-${agent.role} ${className}">${ROLE_SHORT_ZH[agent.role] || "R"}</span>`;
 }
@@ -253,12 +257,17 @@ const SCENE_GUIDES = {
   trial_3: {
     title:"New map element",
   },
+  trial_7: {
+    title:"New map element: Narrow passage",
+    body:"Robots may enter a narrow passage from either end, but only one robot can be inside at a time.",
+    example:"If two robots arrive from opposite ends together, one must wait at the entrance until the other has left.",
+  },
 };
 
 const GUIDE_COPY = {
   cold:"",
   machine:"A marked exit that admits one robot at a time. After entering, the robot leaves the map and the exit becomes available again.",
-  passage:"Only one robot can be inside the marked passage at a time.",
+  passage:"",
   carrier:"",
   operator:"",
   cleaner:"Can carry a spill into cold storage without contamination.",
@@ -323,6 +332,8 @@ function guideFeatureMarkup(feature){
     symbol = '<span class="legend-target-sample" style="--agent-color:#555"><span>0</span></span>';
   }else if(feature.role){
     symbol = roleLegendAvatar(feature.role);
+  }else if(feature.id === "passage"){
+    symbol = passageMapSample("guide-passage-sample");
   }else{
     symbol = legendIcon(feature.iconName, feature.legendClass || `${feature.iconName}-sample`);
   }
@@ -436,7 +447,9 @@ function renderScenePickerKey(){
     ["passage", "Narrow passage"],
     ["exit", "Exit"],
   ].map(([iconName, label]) =>
-    `<div class="picker-key-tile"><span class="picker-key-symbol ${iconName}-symbol">${icon(iconName)}</span><span>${label}</span></div>`
+    `<div class="picker-key-tile">${iconName === "passage"
+      ? passageMapSample("picker-key-symbol")
+      : `<span class="picker-key-symbol ${iconName}-symbol">${icon(iconName)}</span>`}<span>${label}</span></div>`
   ).join("");
   key.innerHTML = `<strong>Map key</strong><div class="picker-key-group"><span class="picker-key-group-label">Robots</span>${roleTiles}</div><div class="picker-key-group"><span class="picker-key-group-label">Map</span><div class="picker-key-grid"><div class="picker-key-tile"><span class="picker-key-target"><span>0</span></span><span>Target</span></div>${environmentTiles}</div></div>`;
 }
@@ -1373,9 +1386,9 @@ function renderLegend(){
     ));
   const passageTile = Object.keys(scn.passages).length
     ? legendTile(
-        `<span class="passage-sample">${icon("passage")}</span>`,
+        passageMapSample("legend-symbol"),
         "Narrow passage",
-        "One robot inside at a time",
+        "",
         "passage-tile",
       )
     : "";
@@ -1461,6 +1474,66 @@ function lastWaitingFrame(result){
   ) || null;
 }
 
+const FEEDBACK_DIRECTIONS = {
+  N:"northbound",
+  E:"eastbound",
+  S:"southbound",
+  W:"westbound",
+};
+
+function feedbackMove(id, frame){
+  const direction = frame?.agents?.[String(id)]?.intent?.dir;
+  return direction
+    ? `${feedbackAgent(id)} moving ${FEEDBACK_DIRECTIONS[direction] || direction}`
+    : feedbackAgent(id);
+}
+
+function feedbackRuleMatches(result, frame, ids, passageContested=false){
+  const norms = result.testedNorms || [];
+  return Object.fromEntries(ids.map(id => {
+    const intent = frame?.agents?.[String(id)]?.intent;
+    const agent = scn.agents.find(row => String(row.id) === String(id));
+    if(!intent || !agent) return [String(id), []];
+    const ctx = {
+      world:scn,
+      agent,
+      action:"MOVE",
+      cell:intent.cell,
+      moveDir:intent.dir,
+      plannedTurn:null,
+      item:null,
+      machine:null,
+      contested:true,
+      passageContested,
+    };
+    return [String(id), norms
+      .filter(norm => matchesNorm(norm, ctx))
+      .map((norm, index) => norm.feedbackLabel || `Rule ${index + 1}`)];
+  }));
+}
+
+function joinedMoves(ids, frame){
+  return ids.map(id => feedbackMove(id, frame)).join(" and ");
+}
+
+function uniqueRuleLabels(matches, ids){
+  return [...new Set(ids.flatMap(id => matches[String(id)] || []))];
+}
+
+function ruleStopExplanation(matches, ids, frame){
+  const stoppedByRule = new Map();
+  ids.forEach(id => {
+    (matches[String(id)] || []).forEach(label => {
+      const stopped = stoppedByRule.get(label) || [];
+      stopped.push(id);
+      stoppedByRule.set(label, stopped);
+    });
+  });
+  return [...stoppedByRule.entries()]
+    .map(([label, stopped]) => `${label} stops ${joinedMoves(stopped, frame)}`)
+    .join("; ");
+}
+
 function buildRunFeedback(result){
   const frame = result.frames?.[result.frames.length - 1] || null;
   const event = frame?.event || null;
@@ -1492,23 +1565,42 @@ function buildRunFeedback(result){
     };
   }
   if(result.reason === "collision" || result.reason === "resource-conflict"){
+    const matches = feedbackRuleMatches(result, frame, ids);
+    const matchedRules = uniqueRuleLabels(matches, ids);
     if(square === "exit"){
+      const coverage = matchedRules.length
+        ? `${matchedRules.join(" and ")} did not leave exactly one robot free to enter.`
+        : `None of your current rules covered ${joinedMoves(ids, frame)}, so neither robot waited.`;
       return {
         title:"This exit has an entry order",
-        observation:`At step ${step}, ${robots} tried to enter the exit together. Only one robot can enter at a time, and the exit accepts them in a particular order. Make one robot wait and try again.`,
+        observation:`At step ${step}, ${robots} tried to enter the exit together. ${coverage} Change the rules so exactly one robot waits here.`,
         kind:"bad",
       };
     }
+    const coverage = matchedRules.length
+      ? `${matchedRules.join(" and ")} did not make exactly one of them wait.`
+      : `Neither current rule matched ${joinedMoves(ids, frame)}, so neither robot waited.`;
     return {
-      title:"They met at the same time",
-      observation:`At step ${step}, ${robots} both tried to enter the same ${square}. Look back one step to see where one of them could have waited.`,
+      title:"No rule resolved this meeting",
+      observation:`At step ${step}, ${robots} tried to enter the same ${square}. ${coverage} Adjust a rule so one of these two approaches waits.`,
       kind:"bad",
     };
   }
   if(result.reason === "passage-conflict"){
+    const matches = feedbackRuleMatches(result, frame, ids, true);
+    const matchedRules = uniqueRuleLabels(matches, ids);
+    const hasPassageRule = (result.testedNorms || []).some(hasPassageCondition);
+    let diagnosis;
+    if(!hasPassageRule){
+      diagnosis = "Your current rules do not name the narrow passage, so they cannot decide who waits at its entrances.";
+    }else if(!matchedRules.length){
+      diagnosis = `Your narrow-passage rule did not match ${joinedMoves(ids, frame)}.`;
+    }else{
+      diagnosis = `${matchedRules.join(" and ")} did not leave exactly one entrance free.`;
+    }
     return {
-      title:"They entered from both ends",
-      observation:`At step ${step}, ${robots} entered the narrow passage at the same time. Only one robot can be inside it, so choose one to wait at the entrance.`,
+      title:"The narrow passage was not resolved",
+      observation:`At step ${step}, ${robots} entered from opposite ends. ${diagnosis} Adjust a narrow-passage rule so one robot waits at the entrance.`,
       kind:"bad",
     };
   }
@@ -1527,9 +1619,16 @@ function buildRunFeedback(result){
   }
   if(result.reason === "priority-violation"){
     const entrant = event?.agent !== undefined ? feedbackAgent(event.agent, frame) : "A robot";
+    const waitingIds = ids.filter(id => String(id) !== String(event?.agent));
+    const matches = feedbackRuleMatches(result, frame, ids);
+    const waitingMove = waitingIds.length ? feedbackMove(waitingIds[0], frame) : "the other robot";
+    const waitingRules = uniqueRuleLabels(matches, waitingIds);
+    const cause = waitingRules.length
+      ? `${waitingRules.join(" and ")} made ${waitingMove} wait, so ${entrant} entered first.`
+      : `${entrant} entered first because the other robot was stopped.`;
     return {
-      title:"This exit has an entry order",
-      observation:`At step ${step}, ${entrant} entered the exit first, but the exit accepts the other robot first. Change which robot waits and try again.`,
+      title:"The exit received the wrong robot first",
+      observation:`At step ${step}, ${cause} This exit requires the opposite order, so change which approach waits.`,
       kind:"bad",
     };
   }
@@ -1546,9 +1645,17 @@ function buildRunFeedback(result){
       .filter(([, meta]) => meta.waiting)
       .map(([id]) => id);
     const waitingRobots = waitingIds.map(id => feedbackAgent(id, waitingFrame)).join(" and ");
+    const matches = feedbackRuleMatches(result, waitingFrame, waitingIds);
+    const matchedRules = uniqueRuleLabels(matches, waitingIds);
+    const stoppedByRules = ruleStopExplanation(matches, waitingIds, waitingFrame);
+    const targetCell = waitingFrame?.agents?.[waitingIds[0]]?.intent?.cell;
+    const target = feedbackCellType(targetCell);
+    const cause = matchedRules.length
+      ? `At the ${target}, ${stoppedByRules}.`
+      : `${waitingRobots || "The robots"} are repeatedly being stopped at the ${target}.`;
     return {
-      title:"Everyone is still waiting",
-      observation:`${waitingRobots || "The robots"} could not make any more progress. Check whether a rule keeps stopping the same move.`,
+      title:"Both robots are being told to wait",
+      observation:`${cause} Because neither can enter, the task cannot continue. Change the rules so only one waits here.`,
       kind:"bad",
     };
   }
@@ -1624,9 +1731,11 @@ function showFrameAt(index, updateStatus=true){
 
 function currentNorms(){
   return rules
-    .filter(rule => rule.conds.length > 0)
-    .map(rule => ({
+    .map((rule, index) => ({rule, index}))
+    .filter(({rule}) => rule.conds.length > 0)
+    .map(({rule, index}) => ({
       action:"MOVE",
+      feedbackLabel:`Rule ${index + 1}`,
       conds:rule.conds.map(condition => ({
         p:condition.p,
         v:condition.v,
@@ -1652,6 +1761,11 @@ function play(){
   if(timer){ clearInterval(timer); timer = null; }
   const norms = currentNorms();
   const result = simulate(scn, norms);
+  result.testedNorms = norms.map(norm => ({
+    action:norm.action,
+    feedbackLabel:norm.feedbackLabel,
+    conds:norm.conds.map(condition => ({...condition})),
+  }));
   const availableBefore = new Set(unlockedTasks().map(task => task.id));
   const shiftState = shiftStates[scn.id];
   shiftState.visited = true;

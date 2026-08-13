@@ -209,9 +209,17 @@ function atom(ctx, cond){
   return false;
 }
 
-const isDynamic = norm => norm.conds.some(c => c.p === "contested");
-const matchesNorm = (norm, ctx) =>
-  norm.action === ctx.action && norm.conds.every(c => atom(ctx, c) !== !!c.negated);
+const hasPassageCondition = norm => norm.conds.some(
+  c => c.p === "target_type" && c.v === "passage" && !c.negated
+);
+const isDynamic = norm => norm.conds.some(
+  c => c.p === "contested" || (c.p === "target_type" && c.v === "passage")
+);
+const matchesNorm = (norm, ctx) => {
+  if(ctx.passageContested && !hasPassageCondition(norm)) return false;
+  if(hasPassageCondition(norm) && !ctx.passageContested) return false;
+  return norm.action === ctx.action && norm.conds.every(c => atom(ctx, c) !== !!c.negated);
+};
 
 function staticForbidden(world, agent, staticNorms, action, opts){
   const ctx = {
@@ -224,6 +232,7 @@ function staticForbidden(world, agent, staticNorms, action, opts){
     item:opts.item || null,
     machine:opts.machine || null,
     contested:false,
+    passageContested:false,
   };
   return staticNorms.some(n => matchesNorm(n, ctx));
 }
@@ -357,6 +366,7 @@ function snapshot(scn, pos, event, meta={}){
     "no-plan",
     "resource-conflict",
     "collision",
+    "passage-conflict",
     "lane-blocked",
     "priority-violation",
     "jam",
@@ -495,6 +505,13 @@ function simulate(scn, rules){
     };
     const keys = {};
     scn.agents.forEach(a => { keys[a.id] = targetKey(a.id); });
+    const passageContested = {};
+    scn.agents.forEach(agent => {
+      const id = agent.id;
+      passageContested[id] = !!entryPassages[id] && scn.agents.some(
+        other => other.id !== id && entryPassages[other.id] === entryPassages[id]
+      );
+    });
     const plannedTurns = {};
     scn.agents.forEach(agent => {
       const id = agent.id;
@@ -524,6 +541,7 @@ function simulate(scn, rules){
         item:it.item ? world.items[it.item] : null,
         machine:it.machine ? world.machines[it.machine] : null,
         contested,
+        passageContested:passageContested[id],
       };
       if(it.kind !== "stay" && dynamicNorms.some(n => matchesNorm(n, ctx))) blocked.add(id);
     }
