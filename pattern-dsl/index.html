@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Pattern DSL Experiment - Task</title>
+    <link rel="stylesheet" href="reference-styles.css?v=19">
+    <link rel="stylesheet" href="styles.css?v=19">
+</head>
+<body class="dark-page">
+    <div id="experimentContent">
+        <div class="progress-bar" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="progress-info">
+                Progress: <span id="currentTrial">1</span> / <span id="totalTrials">8</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill" style="width: 12.5%"></div>
+            </div>
+            <div class="progress-info">
+                <span id="percentComplete">0%</span> Complete
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="panel-card target-card">
+                <h3 class="panel-title">TARGET PATTERN <span id="targetNumber">1</span></h3>
+                <div class="pattern-view">
+                    <div class="pattern-grid pattern-grid-large target-grid" id="target-grid" aria-label="Target pattern"></div>
+                </div>
+            </div>
+
+            <div class="panel-card pattern-card">
+                <h3 class="panel-title" id="result-title">YOUR PATTERN</h3>
+                <div class="workspace-canvas" id="workspace">
+                    <div class="pattern-grid pattern-grid-large result-grid" id="result-grid" aria-label="Current pattern"></div>
+                </div>
+                <span id="result-state" hidden>No expression yet</span>
+                <span id="expression-readout" hidden>Combine patterns to match the target</span>
+                <span id="feedback-line" class="feedback-line" role="status" aria-live="polite" hidden></span>
+            </div>
+
+            <div class="panel-card controls-card">
+                <div id="binaryPreviewPanel" class="controls-section preview-section binary-preview-panel">
+                    <h3 class="panel-subtitle">PREVIEW</h3>
+                    <div id="binaryPreviewPlaceholder" class="binary-preview-placeholder preview-placeholder-visible">Select an operation to get started</div>
+                    <div id="binaryPreviewBody" class="binary-preview-body" style="display:none;">
+                        <div id="binaryInlineOpLabel" class="binary-inline-op">add(</div>
+                        <button id="operand-slot-1" class="operand-box" data-slot="0" type="button" aria-label="Choose first operand"></button>
+                        <div class="binary-inline-comma">,</div>
+                        <button id="operand-slot-2" class="operand-box" data-slot="1" type="button" aria-label="Choose second operand"></button>
+                        <div class="binary-inline-close">)</div>
+                    </div>
+                    <div id="unaryPreviewBody" class="binary-preview-body unary-preview-body" style="display:none;">
+                        <div id="unaryInlineOpLabel" class="binary-inline-op">invert(</div>
+                        <button id="unaryOperandBox" class="operand-box" data-slot="0" type="button" aria-label="Choose operand"></button>
+                        <div class="binary-inline-close">)</div>
+                    </div>
+                    <div class="binary-preview-footer">
+                        <button id="cancel-operation" class="btn btn-warning binary-cancel-btn" type="button" disabled>⟲ Reset</button>
+                        <button id="confirm-step" class="btn btn-success binary-confirm-btn" type="button" disabled>✓ Confirm</button>
+                    </div>
+                    <span id="builder-heading" hidden></span>
+                    <span id="builder-state" hidden></span>
+                    <span id="pending-expression" hidden></span>
+                    <span id="operand-join" hidden></span>
+                    <div id="preview-grid" hidden></div>
+                </div>
+                <div class="controls-section operations-section">
+                    <h4 class="panel-subtitle">OPERATIONS</h4>
+                    <div class="section-panel">
+                        <div class="operations-grid" id="operation-toolbar">
+                            <button id="bin-add" data-op="add" class="transform-btn binary-btn operation-button" type="button" title="Add/OR two patterns"><span class="btn-text">add</span></button>
+                            <button id="bin-intersect" data-op="overlap" class="transform-btn binary-btn operation-button" type="button" title="Intersect/AND two patterns"><span class="btn-text">intersect</span></button>
+                            <button data-op="invert" class="transform-btn unary-btn operation-button" type="button" title="Invert pattern"><span class="btn-text">invert</span></button>
+                            <button data-op="flip_tb" class="transform-btn unary-btn operation-button" type="button" title="Reflect horizontally - top to bottom"><span class="btn-arrow">⇵</span><span class="btn-text">flip_h</span></button>
+                            <button data-op="flip_lr" class="transform-btn unary-btn operation-button" type="button" title="Reflect vertically - left to right"><span class="btn-arrow">⇄</span><span class="btn-text">flip_v</span></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="controls-section panel-selection-section">
+                    <div class="panel-picker-heading">
+                        <span>PANEL</span>
+                        <small id="phase-label">Pattern 1</small>
+                    </div>
+                    <div class="panel-tabs" id="panel-tabs" role="tablist" aria-label="Pattern panels">
+                        <button class="panel-tab" id="panel-tab-1" data-panel="1" role="tab" type="button">
+                            <span>Panel 1</span>
+                            <small id="panel-status-1">Active</small>
+                        </button>
+                        <button class="panel-tab" id="panel-tab-2" data-panel="2" role="tab" type="button">
+                            <span>Panel 2</span>
+                            <small id="panel-status-2">Available</small>
+                        </button>
+                    </div>
+                    <div class="carry-badge" id="carry-badge" hidden>Previous final result carried over</div>
+                </div>
+                <div class="controls-section primitives-section">
+                    <div class="primitives-title-row">
+                        <h4 class="panel-subtitle">PRIMITIVES</h4>
+                        <span id="source-hint" class="point-counter">Panel 1</span>
+                    </div>
+                    <div class="section-panel">
+                        <div class="primitives-grid-inline" id="primitive-shelf"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-card program-card">
+                <div class="program-header">
+                    <h3>STEP SEQUENCE</h3>
+                    <button id="check-button" class="btn btn-success program-submit" type="button" disabled title="Check the current pattern">
+                        <span style="font-size:1.1rem; margin-right:0.2rem;">✓</span> Check pattern
+                    </button>
+                </div>
+                <div class="operations-log" id="step-history">
+                    <span class="empty-history">Waiting for operations...</span>
+                </div>
+                <div class="program-footer new-program-footer">
+                    <span id="step-count">0 steps</span>
+                    <div>
+                        <button class="btn" id="undo-button" type="button" disabled>↶ Undo</button>
+                        <button class="btn" id="reset-button" type="button" disabled>⟳ Reset</button>
+                    </div>
+                </div>
+                <details class="debug-panel" id="debug-panel" hidden><summary>Developer answers</summary><pre id="debug-content"></pre></details>
+            </div>
+        </div>
+
+        <div id="completed-strip" hidden></div>
+        <span id="completed-summary" hidden></span>
+        <span id="trial-label" hidden></span>
+        <span id="progress-count" hidden></span>
+        <span id="progress-fill" hidden></span>
+        <span id="task-heading" hidden>Build the target</span>
+        <button id="help-button" type="button" hidden></button>
+    </div>
+
+    <dialog class="task-dialog" id="tutorial-dialog">
+        <div class="task-dialog-content">
+            <button class="dialog-close" id="tutorial-close" type="button" aria-label="Close instructions">×</button>
+            <h2>Build each target pattern</h2>
+            <p>Use either panel's primitives and the operations to build the visible target. Only your final expression carries over to the next trial.</p>
+            <button class="btn btn-success" id="start-button" type="button">Start</button>
+        </div>
+    </dialog>
+
+    <div class="feedback-modal" id="success-dialog" role="dialog" aria-modal="true" aria-live="assertive" aria-hidden="true">
+        <div class="feedback-content">
+            <div class="feedback-icon success" aria-hidden="true">&#10003;</div>
+            <div class="feedback-message">
+                <div id="success-title">Correct!</div>
+                <div class="feedback-detail" id="success-copy"></div>
+            </div>
+        </div>
+    </div>
+
+    <dialog class="task-dialog" id="reset-dialog">
+        <div class="task-dialog-content">
+            <h2>Reset Panel <span id="reset-panel-number">1</span>?</h2>
+            <p>This removes every saved step from this panel.</p>
+            <div class="dialog-actions">
+                <button class="btn" id="keep-panel-button" type="button">Keep work</button>
+                <button class="btn btn-warning" id="confirm-reset-button" type="button">Reset panel</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script src="app.js?v=19"></script>
+</body>
+</html>

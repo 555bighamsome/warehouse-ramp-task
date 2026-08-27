@@ -1,0 +1,444 @@
+[hidden] {
+    display: none !important;
+}
+
+/* The original Points card is the only layout area replaced by the panel chooser. */
+.panel-picker-card {
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 0.65rem;
+    text-align: left;
+}
+
+.panel-selection-section + .primitives-section {
+    margin-top: 0.35rem;
+    padding-top: 0;
+    border-top: 0;
+}
+
+.preview-section {
+    flex: 0 0 auto;
+    gap: 0.4rem;
+}
+
+.preview-section .panel-subtitle {
+    margin-bottom: 0;
+}
+
+.preview-section .binary-preview-body {
+    --binary-operand-size: 44px;
+    flex: 0 0 auto;
+    gap: 0.2rem;
+}
+
+.preview-section .binary-inline-op,
+.preview-section .binary-inline-comma,
+.preview-section .binary-inline-close {
+    padding: 0 0.08rem;
+}
+
+.preview-section .binary-preview-footer {
+    margin-top: 0;
+}
+
+.preview-section .binary-preview-footer .btn {
+    min-width: 0;
+    flex: 1;
+}
+
+.panel-picker-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #334155;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.panel-picker-heading small {
+    color: var(--color-text-muted);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+.panel-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+    margin-top: 0.55rem;
+}
+
+.panel-tab {
+    min-width: 0;
+    min-height: 52px;
+    padding: 0.45rem 0.5rem;
+    color: #1f2937;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 0;
+    cursor: pointer;
+    text-align: left;
+}
+
+.panel-tab span,
+.panel-tab small {
+    display: block;
+}
+
+.panel-tab span {
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.panel-tab small {
+    margin-top: 0.2rem;
+    overflow: hidden;
+    color: #64748b;
+    font-size: 0.62rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.panel-tab[aria-selected="true"] {
+    color: #1d4ed8;
+    background: #eef2ff;
+    border: 2px solid #1d4ed8;
+}
+
+.carry-badge {
+    margin-top: 0.35rem;
+    overflow: hidden;
+    color: #0f766e;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The task keeps the original card geometry and reads grid size from the data. */
+.pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--grid-columns, 6), 1fr);
+    grid-template-rows: repeat(var(--grid-rows, 6), 1fr);
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+}
+
+.pattern-grid-large {
+    width: 220px;
+    height: 220px;
+}
+
+.pattern-grid-mini {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+}
+
+.pattern-cell {
+    display: block;
+    background: #ffffff;
+    box-shadow: inset 0 0 0 0.5px #e2e8f0;
+}
+
+.pattern-cell.on {
+    background: #08306b;
+}
+
+.pattern-grid.grid-unset .pattern-cell {
+    background: #f1f5f9;
+}
+
+.result-grid.matched {
+    outline: 3px solid #059669;
+    outline-offset: 3px;
+}
+
+.workspace-canvas,
+.pattern-view {
+    padding: 0;
+    background: transparent;
+    border: 0;
+}
+
+#workspace.preview-glow {
+    outline: 0;
+}
+
+#workspace.preview-glow .result-grid {
+    outline: 3px solid #f59e0b;
+    outline-offset: 4px;
+}
+
+/* Preserve the original preview components and fill them with task operands. */
+button.operand-box {
+    padding: 0;
+}
+
+.operand-box.editing {
+    border: 2px solid #f59e0b;
+}
+
+.operand-box .pattern-grid-mini {
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.preview-placeholder-visible {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+/* Four visual operands use a stable 2 x 2 shelf so their coordinates stay legible. */
+.primitives-section {
+    flex: 0 0 auto;
+}
+
+.primitives-section .section-panel {
+    flex: 0 0 auto;
+}
+
+.primitives-grid-inline {
+    width: 100%;
+    height: auto;
+    padding: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, auto);
+    gap: 0.65rem;
+    align-items: stretch;
+}
+
+.primitive-btn {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    aspect-ratio: 1;
+    padding: 0.55rem;
+}
+
+.primitive-btn .pattern-grid-mini {
+    width: min(100%, 72px);
+    height: auto;
+    aspect-ratio: 1;
+    flex: 0 1 72px;
+    border-color: #94a3b8;
+}
+
+.primitive-btn .pattern-cell {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 0.75px #cbd5e1;
+}
+
+.primitive-btn .pattern-cell.on {
+    background: #08306b;
+}
+
+.primitive-btn:disabled {
+    opacity: 0.62;
+    cursor: not-allowed;
+}
+
+.controls-card {
+    align-self: stretch;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    gap: 0.55rem;
+}
+
+.primitive-btn.selected {
+    border: 2px solid #b45309;
+    background: #fff7ed;
+}
+
+/* The Step Sequence is task-specific but uses the original Program card pieces. */
+.step-card {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    padding: 0.45rem 0.5rem;
+    color: var(--color-text);
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 0;
+    cursor: pointer;
+    text-align: left;
+}
+
+.step-card:hover {
+    background: #f1f5f9;
+}
+
+.step-card.current {
+    border-color: #2563eb;
+    background: #e0e7ff;
+}
+
+.step-card.carried {
+    border-style: dashed;
+}
+
+.step-card.selected {
+    border: 2px solid #b45309;
+    background: #fff7ed;
+}
+
+.step-copy {
+    min-width: 0;
+    flex: 1;
+}
+
+.step-copy > span {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+}
+
+.step-copy strong {
+    font-size: 0.75rem;
+}
+
+.step-copy em {
+    color: #1d4ed8;
+    font-size: 0.58rem;
+    font-style: normal;
+}
+
+.step-copy small {
+    display: block;
+    margin-top: 0.18rem;
+    overflow: hidden;
+    color: #64748b;
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.empty-history {
+    color: #9ca3af;
+    font-size: 0.85rem;
+}
+
+.new-program-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.new-program-footer > span {
+    color: #64748b;
+    font-size: 0.7rem;
+}
+
+.new-program-footer > div {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.new-program-footer .btn {
+    min-height: 30px;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.68rem;
+}
+
+.feedback-line.ready {
+    color: #047857;
+}
+
+.feedback-line.error {
+    color: #dc2626;
+}
+
+.debug-panel {
+    max-height: 140px;
+    overflow: auto;
+    color: #475569;
+    font-size: 0.65rem;
+}
+
+.debug-panel pre {
+    white-space: pre-wrap;
+}
+
+/* Dialogs are outside the fixed experiment canvas. */
+.task-dialog {
+    width: min(480px, calc(100vw - 40px));
+    padding: 0;
+    color: #1f2937;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 0;
+}
+
+.task-dialog::backdrop {
+    background: rgba(11, 12, 16, 0.72);
+}
+
+.task-dialog-content {
+    position: relative;
+    padding: 2rem;
+}
+
+.task-dialog-content h2 {
+    margin: 0 0 0.8rem;
+}
+
+.task-dialog-content p {
+    margin: 0 0 1.2rem;
+    color: #64748b;
+    line-height: 1.55;
+}
+
+#success-dialog .feedback-content {
+    width: min(460px, calc(100vw - 40px));
+    box-sizing: border-box;
+}
+
+#success-dialog .feedback-message {
+    display: grid;
+    gap: 0.35rem;
+}
+
+#success-dialog .feedback-detail {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.dialog-close {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    color: #475569;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 0;
+    cursor: pointer;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
