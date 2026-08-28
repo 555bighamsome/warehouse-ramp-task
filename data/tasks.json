@@ -1,4 +1,4 @@
-window.PARADIGM_LIBRARIES = {
+{
   "ramp-carry": {
     "experiment_version": 30,
     "title": "Warehouse Conflict Rules",
@@ -150799,13 +150799,4 @@ window.PARADIGM_LIBRARIES = {
     },
     "curriculum_prefixes": []
   }
-};
-
-(() => {
-  const params = new URLSearchParams(window.location.search);
-  const schedule = params.get("schedule") || "ramp";
-  const condition = params.get("condition") || "carry";
-  const key = `${schedule}-${condition}`;
-  window.PARADIGM_CONDITION = window.PARADIGM_LIBRARIES[key] ? key : "ramp-carry";
-  window.TASK_LIBRARY = window.PARADIGM_LIBRARIES[window.PARADIGM_CONDITION];
-})();
+}

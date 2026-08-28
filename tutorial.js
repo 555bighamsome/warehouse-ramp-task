@@ -515,7 +515,9 @@ function ruleReferenceMarkup(){
       </div>
     ` : ""}
     <div class="tut-rule-example tut-rule-builder" aria-label="Practice rule builder">
-      <div class="tut-rule-action"><span>FORBID</span><strong>MOVE INTO A SQUARE</strong></div>
+      <div class="tut-rule-action">${CLEAN_RULE_LANGUAGE
+        ? "<strong>A ROBOT WAITS</strong>"
+        : "<span>FORBID</span><strong>MOVE INTO A SQUARE</strong>"}</div>
       ${condition ? `
         <div class="tut-rule-cond completed"><span>WHEN</span><b>${condition.text}</b></div>
         <div class="tut-practice-rule-actions">
@@ -545,6 +547,12 @@ function ruleReferenceMarkup(){
 
 function libraryReferenceMarkup(){
   const text = state.practiceCondition?.text || "the robot is moving north";
+  const action = CLEAN_RULE_LANGUAGE
+    ? "<strong>A ROBOT WAITS</strong>"
+    : "<span>FORBID</span> MOVE INTO A SQUARE";
+  const summary = CLEAN_RULE_LANGUAGE
+    ? `A ROBOT WAITS WHEN ${text}`
+    : `FORBID MOVE INTO A SQUARE WHEN ${text}`;
   if(!state.practiceSaved){
     return `
       <div class="tut-library-instruction">
@@ -555,7 +563,7 @@ function libraryReferenceMarkup(){
         <section>
           <h3>Rule from the previous scene</h3>
           <div class="tut-library-rule">
-            <div><span>FORBID</span> MOVE INTO A SQUARE</div>
+            <div>${action}</div>
             <div><span>WHEN</span> ${text}</div>
           </div>
           <button id="tut-save-practice" type="button">Save to library</button>
@@ -579,7 +587,7 @@ function libraryReferenceMarkup(){
         <h3>Rules in this scene</h3>
         ${state.practiceUsed ? `
           <div class="tut-library-rule">
-            <div><span>FORBID</span> MOVE INTO A SQUARE</div>
+            <div>${action}</div>
             <div><span>WHEN</span> ${text}</div>
           </div>
         ` : '<p class="tut-library-empty">No active rules.</p>'}
@@ -587,7 +595,7 @@ function libraryReferenceMarkup(){
       <section>
         <h3>Saved rule library</h3>
         <div class="tut-saved-row">
-          <span>FORBID MOVE INTO A SQUARE WHEN ${text}</span>
+          <span>${summary}</span>
           <button class="${state.practiceUsed ? "" : "tut-next-action"}" id="tut-use-practice" type="button" ${state.practiceUsed ? "disabled" : ""}>
             ${state.practiceUsed ? "Added" : "Add to rulebook"}
           </button>

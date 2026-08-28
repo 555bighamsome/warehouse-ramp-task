@@ -20,11 +20,8 @@ let ruleEvents = [];
 let lastRuleEventIndex = 0;
 let nextRuleId = 1;
 let rulebookRevision = 0;
+let simpleFamilySelection = null;
 const sceneGuidesSeen = new Set();
-const shiftStates = Object.fromEntries(TASKS.map(task => [
-  task.id,
-  { visited:false, lastOk:null, testedRevision:null, attempts:0 },
-]));
 
 const $ = id => document.getElementById(id);
 const URL_PARAMS = new URLSearchParams(window.location.search);
@@ -38,6 +35,27 @@ const ORDER_MODE = DEBUG_UI
   : (URL_PARAMS.get("order") || (SKIP_TUTORIAL ? "free" : "curriculum"));
 const FREE_ORDER = ORDER_MODE === "free";
 const EDITOR_CONDITION = RAW_LIBRARY.condition === "fresh" ? "fresh" : "carry";
+let activeTaskBranch = null;
+
+function activateTaskBranch(branch){
+  const rawTasks = RAW_LIBRARY.branch_tasks?.[branch];
+  if(!Array.isArray(rawTasks) || !rawTasks.length) return false;
+  const normalized = rawTasks.map(normalizeTask);
+  TASKS.splice(0, TASKS.length, ...normalized);
+  scn = TASKS[curIndex] || TASKS[0];
+  activeTaskBranch = branch;
+  return true;
+}
+
+const requestedBranch = URL_PARAMS.get("branch");
+if(requestedBranch === "movement" || requestedBranch === "role"){
+  activateTaskBranch(requestedBranch);
+}
+
+const shiftStates = Object.fromEntries(TASKS.map(task => [
+  task.id,
+  { visited:false, lastOk:null, testedRevision:null, attempts:0 },
+]));
 
 function taskUnlocked(task){
   if(FREE_ORDER) return true;
@@ -63,7 +81,10 @@ const OBJECT_IDS = {
   "Robot role":"robot",
   "Movement":"movement",
 };
-const RULE_SCHEMA = Object.values((EXPORTED_RULE_SCHEMA.fields || []).reduce((groups, field) => {
+const VISIBLE_RULE_FIELDS = (EXPORTED_RULE_SCHEMA.fields || []).filter(
+  field => !CLEAN_RULE_LANGUAGE || field.predicate !== "contested"
+);
+const RULE_SCHEMA = Object.values(VISIBLE_RULE_FIELDS.reduce((groups, field) => {
   const objectId = OBJECT_IDS[field.object] || field.object.toLowerCase().replaceAll(" ", "-");
   if(!groups[objectId]){
     groups[objectId] = { id:objectId, label:field.object, properties:[] };
@@ -84,6 +105,9 @@ const MUTATING_RULE_EVENTS = new Set([
   "condition_removed",
   "rule_removed",
   "library_rule_used",
+  "rule_family_changed",
+  "rule_value_added",
+  "rule_value_removed",
 ]);
 
 function recordRuleEvent(type, detail={}){
@@ -135,6 +159,7 @@ function icon(name, extraClass=""){
 }
 
 function roleIconName(role){
+  if(SIMPLE_FAMILY_RULE_LANGUAGE) return "robot";
   if(role === "carrier") return "carrier";
   if(role === "operator") return "operator";
   if(role === "cleaner") return "cleaner";
@@ -173,7 +198,21 @@ function stateIconName(meta){
   return "run";
 }
 
-const ROLE_SHORT_ZH = { carrier:"A", cleaner:"Cl", operator:"B" };
+const ROLE_SHORT_ZH = {
+  carrier:"C",
+  operator:"O",
+  inspector:"I",
+  loader:"L",
+  technician:"T",
+  courier:"Co",
+  scout:"S",
+  guard:"G",
+  cleaner:"Cl",
+};
+const MOVEMENT_ARROWS = {
+  N:"\u2191", NE:"\u2197", E:"\u2192", SE:"\u2198",
+  S:"\u2193", SW:"\u2199", W:"\u2190", NW:"\u2196",
+};
 const PROPERTY_LABELS = {
   target_type:"type",
   contested:"state",
@@ -190,6 +229,12 @@ function agentColor(agent){
 const ROLE_COLORS = {
   carrier: "#D85C2F",
   operator: "#347FC4",
+  inspector: "#7B61A8",
+  loader: "#2D8B73",
+  technician: "#B06C2D",
+  courier: "#4F6F8F",
+  scout: "#8A6D3B",
+  guard: "#7A4B57",
   cleaner: "#17966F",
 };
 
@@ -198,7 +243,8 @@ function roleColor(role){
 }
 
 function roleLegendAvatar(role, extraClass=""){
-  return `<span class="agent-avatar role-key-avatar ${extraClass}" style="--agent-color:${roleColor(role)}">${icon(roleIconName(role), "agent-avatar-icon")}</span>`;
+  const mark = icon(roleIconName(role), "agent-avatar-icon");
+  return `<span class="agent-avatar role-key-avatar ${extraClass}" style="--agent-color:${roleColor(role)}">${mark}</span>`;
 }
 
 function passageMapSample(extraClass=""){
@@ -225,7 +271,8 @@ function targetMarkup(agent, targetIndex=0, onMachine=false){
 }
 
 function agentAvatar(agent, extraClass=""){
-  return `<span class="agent-avatar ${extraClass}" style="--agent-color:${agentColor(agent)}">${icon(roleIconName(agent.role), "agent-avatar-icon")}<span class="agent-avatar-id">${agentDisplayId(agent.id)}</span></span>`;
+  const mark = icon(roleIconName(agent.role), "agent-avatar-icon");
+  return `<span class="agent-avatar ${extraClass}" style="--agent-color:${agentColor(agent)}">${mark}<span class="agent-avatar-id">${agentDisplayId(agent.id)}</span></span>`;
 }
 
 function spillIconBadge(agent, className=""){
@@ -233,10 +280,19 @@ function spillIconBadge(agent, className=""){
   return `<span class="spill-icon-badge ${className}" title="Carrying spill">${icon("spill", "spill-icon")}</span>`;
 }
 
+function displayedMovement(agent, meta=null){
+  return meta?.intent?.dir || agent.movementArrow || null;
+}
+
 function robotMarkup(agent, meta){
+  const movement = displayedMovement(agent, meta);
+  const identity = icon(roleIconName(agent.role), "robot-role");
   return [
-    icon(roleIconName(agent.role), "robot-role"),
+    identity,
     `<span class="robot-id">${agentDisplayId(agent.id)}</span>`,
+    SIMPLE_FAMILY_RULE_LANGUAGE && movement
+      ? `<span class="movement-arrow-badge" title="Movement direction ${MOVEMENT_ARROWS[movement] || movement}">${MOVEMENT_ARROWS[movement] || movement}</span>`
+      : "",
     carryIcon(agent),
     meta?.done ? icon("done", "robot-state-mark") : "",
     meta?.failed ? icon("failed", "robot-state-mark") : "",
@@ -341,10 +397,12 @@ function guideFeatureMarkup(feature){
 }
 
 function sceneHasGuide(task){
+  if(SIMPLE_FAMILY_RULE_LANGUAGE) return false;
   return sceneFeatureItems(task).length > 0;
 }
 
 function shouldAutoShowGuide(task){
+  if(SIMPLE_FAMILY_RULE_LANGUAGE) return false;
   return sceneFeatureItems(task).length > 0;
 }
 
@@ -489,6 +547,7 @@ function switchTask(index){
   if(!taskUnlocked(TASKS[index])) return;
   const sourceIndex = curIndex;
   const sourceTask = scn;
+  const targetWasVisited = shiftStates[TASKS[index].id].visited;
   if(EDITOR_CONDITION === "fresh"){
     sceneRuleDrafts.set(scn.id, rules);
   }
@@ -498,6 +557,10 @@ function switchTask(index){
   if(!carriesActiveRulebook){
     const existingDraft = sceneRuleDrafts.get(scn.id);
     rules = existingDraft || loadStarterRules(scn);
+  }
+  if(SIMPLE_FAMILY_RULE_LANGUAGE){
+    simpleFamilySelection = rules[0]?.conds?.[0]?.p ||
+      (carriesActiveRulebook ? simpleFamilySelection : null);
   }
   lastResult = null;
   lastFrames = [];
@@ -519,8 +582,25 @@ function switchTask(index){
     });
   }
   renderAll();
-  if(carriesActiveRulebook){
-    setStatus("The current rulebook is ready to edit on this scene.", "");
+  const shouldAutoTest = carriesActiveRulebook &&
+    !FREE_ORDER &&
+    !targetWasVisited &&
+    shiftStates[sourceTask.id].lastOk === true &&
+    rules.some(rule => rule.conds?.length);
+  if(shouldAutoTest){
+    setStatus(`Testing your ${sourceTask.label} rule on ${scn.label}...`, "");
+    recordRuleEvent("carryover_auto_test_started", {
+      source_shift_id:sourceTask.id,
+      target_shift_id:scn.id,
+    });
+    const expectedIndex = curIndex;
+    setTimeout(() => {
+      if(curIndex === expectedIndex && !shiftStates[scn.id].visited){
+        play("carryover_auto");
+      }
+    }, 450);
+  }else if(carriesActiveRulebook){
+    setStatus(`The rule from ${sourceTask.label} carried over. Run it on ${scn.label}, or edit it first.`, "");
   }
   if(shouldAutoShowGuide(scn)){
     setTimeout(() => showSceneGuide(), 0);
@@ -536,15 +616,17 @@ function buildTabs(){
     const locked = !taskUnlocked(task);
     const stateClass = locked
       ? "locked"
-      : !state.visited ? "unseen" : state.lastOk ? "solved" : "failed";
+      : !state.visited || state.lastOk === null ? "unseen" : state.lastOk ? "solved" : "failed";
     button.className = `tab case-tab ${stateClass}` + (index === curIndex ? " active" : "");
-    const mark = locked ? "" : !state.visited ? "" : state.lastOk ? "✓" : "×";
+    const mark = locked || !state.visited || state.lastOk === null ? "" : state.lastOk ? "✓" : "×";
     button.innerHTML = `<span class="scene-number">${task.label}</span><span class="scene-mark" aria-hidden="true">${mark}</span>`;
     button.disabled = locked;
     button.title = locked
       ? `${task.label}: complete the previous scene first`
       : !state.visited
       ? `${task.label}: not yet run`
+      : state.lastOk === null
+      ? `${task.label}: edited rule not yet run`
       : `${task.label}: ${state.lastOk ? "solved" : "not solved"}`;
     button.onclick = () => switchTask(index);
     tabs.appendChild(button);
@@ -563,7 +645,7 @@ function buildTabs(){
   const available = unlockedTasks().length;
   const caseSummary = $("case-summary");
   if(caseSummary){
-    caseSummary.textContent = `${visited}/${TASKS.length} checked · ${currentSolved}/${TASKS.length} solved`;
+    caseSummary.textContent = `${scn.label} · ${currentSolved}/${TASKS.length} solved`;
   }
   const courseProgress = $("course-progress");
   if(courseProgress){
@@ -574,7 +656,7 @@ function buildTabs(){
 function renderSceneGoal(){
   const list = $("scene-goal-list");
   if(!list) return;
-  list.innerHTML = '<div class="goal-instruction">Move each robot to the destination with the same letter.</div>';
+  list.innerHTML = '<div class="goal-instruction">Move every robot to the matching letter. When two robots meet, exactly one must wait.</div>';
 }
 
 function buildBoard(){
@@ -592,7 +674,9 @@ function buildBoard(){
   const heightCell = Math.floor(availableHeight / scn.rows);
   const widthLimit = widthCell > 0 ? widthCell : 38;
   const heightLimit = heightCell > 0 ? heightCell : 38;
-  const minimumCell = window.innerWidth <= 700 ? 19 : 24;
+  const minimumCell = SIMPLE_FAMILY_RULE_LANGUAGE
+    ? (window.innerWidth <= 700 ? 16 : 22)
+    : (window.innerWidth <= 700 ? 19 : 24);
   CELL = Math.min(38, Math.max(minimumCell, Math.min(widthLimit, heightLimit)));
   board.style.width = (scn.cols * CELL) + "px";
   board.style.height = (scn.rows * CELL) + "px";
@@ -601,6 +685,22 @@ function buildBoard(){
   );
   const passageCellKeys = scn.passageCells;
   const passageEntranceKeys = scn.passageEntrances;
+  scn.diagonalEdgePairs.forEach(([first, second]) => {
+    const firstX = first[1] * CELL + (CELL - 4) / 2;
+    const firstY = first[0] * CELL + (CELL - 4) / 2;
+    const secondX = second[1] * CELL + (CELL - 4) / 2;
+    const secondY = second[0] * CELL + (CELL - 4) / 2;
+    const dx = secondX - firstX;
+    const dy = secondY - firstY;
+    const link = document.createElement("div");
+    link.className = "diagonal-road-link";
+    link.style.left = `${firstX}px`;
+    link.style.top = `${firstY}px`;
+    link.style.width = `${Math.hypot(dx, dy)}px`;
+    link.style.height = `${Math.max(8, CELL - 8)}px`;
+    link.style.transform = `translateY(-50%) rotate(${Math.atan2(dy, dx)}rad)`;
+    board.appendChild(link);
+  });
 
   for(let r=0; r<scn.rows; r++) for(let c=0; c<scn.cols; c++){
     const key = K(r,c);
@@ -705,11 +805,17 @@ function buildBoard(){
   scn.agents.forEach(agent => {
     const robot = document.createElement("div");
     robot.className = "robot" + (agent.active ? "" : " off-duty");
+    robot.dataset.agentId = agent.id;
+    robot.dataset.role = agent.role;
     const robotSize = Math.max(18, CELL - 10);
     robot.style.width = robotSize + "px";
     robot.style.height = robotSize + "px";
     robot.style.background = agentColor(agent);
-    robot.setAttribute("aria-label", agent.active ? `Robot ${agentDisplayId(agent.id)}` : `Robot ${agentDisplayId(agent.id)}: off duty`);
+    const movement = displayedMovement(agent);
+    const identity = SIMPLE_FAMILY_RULE_LANGUAGE
+      ? `Robot ${agentDisplayId(agent.id)}, ${ROLE_ZH[agent.role] || agent.role}, movement ${MOVEMENT_ARROWS[movement] || movement}`
+      : `Robot ${agentDisplayId(agent.id)}`;
+    robot.setAttribute("aria-label", agent.active ? identity : `${identity}: off duty`);
     robot.innerHTML = robotMarkup(agent, null);
     board.appendChild(robot);
     robotEls[agent.id] = robot;
@@ -814,7 +920,11 @@ function renderFrame(frame){
     el.classList.toggle("off-duty", !!meta?.offDuty);
     el.classList.toggle("waiting", !!meta?.waiting);
     el.classList.toggle("failed", !!meta?.failed);
-    el.setAttribute("aria-label", `Robot ${agentDisplayId(agent.id)}: ${stateText(meta)}`);
+    const movement = displayedMovement(agent, meta);
+    const identity = SIMPLE_FAMILY_RULE_LANGUAGE
+      ? `${ROLE_ZH[agent.role] || agent.role}, movement ${MOVEMENT_ARROWS[movement] || movement}`
+      : "";
+    el.setAttribute("aria-label", `Robot ${agentDisplayId(agent.id)}${identity ? `, ${identity}` : ""}: ${stateText(meta)}`);
     el.innerHTML = robotMarkup(agent, meta);
     if(agent.goal?.kind === "operate"){
       if(released){
@@ -855,13 +965,16 @@ function conditionText(cond){
     return `the next square is ${targetType}`;
   }
   if(cond.p === "role"){
-    const role = {carrier:"a Carrier", cleaner:"a Cleaner", operator:"an Operator"}[cond.v] || cond.v;
-    return `the robot is ${role}`;
+    const role = ROLE_ZH[cond.v] || cond.v;
+    return `the robot's role is ${role}`;
   }
   if(cond.p === "carrying"){
     return "the robot is carrying a spill";
   }
   if(cond.p === "move_dir"){
+    if(SIMPLE_FAMILY_RULE_LANGUAGE){
+      return `the robot's movement direction is ${MOVEMENT_ARROWS[cond.v] || cond.v}`;
+    }
     const direction = {N:"north", S:"south", E:"east", W:"west"}[cond.v] || cond.v;
     return `the robot is moving ${direction}`;
   }
@@ -937,6 +1050,9 @@ function starterRulesFor(task){
 function loadStarterRules(task){
   const starter = starterRulesFor(task);
   if(!starter.length) return [];
+  if(SIMPLE_FAMILY_RULE_LANGUAGE){
+    simpleFamilySelection = starter[0]?.conds?.[0]?.p || null;
+  }
   sceneRuleDrafts.set(task.id, starter);
   recordRuleEvent("starter_rulebook_loaded", {
     starter_rule_ids:starter.map(rule => rule.id),
@@ -1231,7 +1347,223 @@ function renderConditionEditor(rule, card){
   card.appendChild(panel);
 }
 
+function simpleField(predicate){
+  return (EXPORTED_RULE_SCHEMA.fields || []).find(field => field.predicate === predicate) || null;
+}
+
+function simpleFamilyFor(sourceRules=rules){
+  return sourceRules.find(rule => rule.conds.length)?.conds?.[0]?.p ||
+    (sourceRules === rules ? simpleFamilySelection : null);
+}
+
+function simpleSelectedValues(sourceRules=rules, family=simpleFamilyFor(sourceRules)){
+  const field = simpleField(family);
+  if(!field) return [];
+  const selected = new Set(sourceRules
+    .flatMap(rule => rule.conds)
+    .filter(cond => cond.p === family)
+    .map(cond => String(cond.v)));
+  return field.values.filter(value => selected.has(String(value.id)));
+}
+
+function simpleRuleMatchesAgent(agent, sourceRules=rules){
+  if(!agent?.active) return false;
+  const family = simpleFamilyFor(sourceRules);
+  const selected = new Set(
+    simpleSelectedValues(sourceRules, family).map(value => String(value.id))
+  );
+  if(family === "role") return selected.has(String(agent.role));
+  if(family === "move_dir") return selected.has(String(agent.movementArrow));
+  return false;
+}
+
+function renderRuleMatchPreview(){
+  if(!SIMPLE_FAMILY_RULE_LANGUAGE) return;
+  scn.agents.forEach(agent => {
+    const matches = simpleRuleMatchesAgent(agent);
+    robotEls[agent.id]?.classList.toggle("rule-preview-waits", matches);
+  });
+}
+
+function naturalOr(items){
+  return items.join(" OR ");
+}
+
+function simpleRuleSentence(sourceRules=rules){
+  const family = simpleFamilyFor(sourceRules);
+  const values = simpleSelectedValues(sourceRules, family);
+  if(!family || !values.length) return "No waiting rule yet.";
+  if(family === "role"){
+    return `A robot waits if its role is ${naturalOr(values.map(value => value.label))}.`;
+  }
+  return `A robot waits if its movement is ${naturalOr(values.map(value => value.symbol || MOVEMENT_ARROWS[value.id] || value.label))}.`;
+}
+
+function simpleCondition(field, value){
+  return {
+    object:field.object,
+    property:field.id,
+    p:field.predicate,
+    v:value.id,
+    negated:false,
+  };
+}
+
+function resetRunAfterRuleEdit(){
+  if(timer){
+    clearInterval(timer);
+    timer = null;
+  }
+  lastResult = null;
+  lastFrames = [];
+  frameIndex = 0;
+  buildBoard();
+  updateContinueButton();
+  setStatus(
+    simpleSelectedValues().length
+      ? "Rule changed. Run it to test."
+      : "Choose one or more values.",
+    "",
+  );
+}
+
+function chooseSimpleFamily(field){
+  if(simpleFamilySelection === field.predicate) return;
+  const previous = simpleFamilySelection;
+  simpleFamilySelection = field.predicate;
+  rules = [];
+  recordRuleEvent("rule_family_changed", {
+    previous_family:previous,
+    family:field.predicate,
+    cleared_previous_values:true,
+  });
+  resetRunAfterRuleEdit();
+  renderRules();
+}
+
+function toggleSimpleValue(field, value){
+  if(simpleFamilySelection !== field.predicate){
+    chooseSimpleFamily(field);
+  }
+  const index = rules.findIndex(rule =>
+    rule.conds.length === 1 &&
+    rule.conds[0].p === field.predicate &&
+    String(rule.conds[0].v) === String(value.id)
+  );
+  if(index >= 0){
+    const [removed] = rules.splice(index, 1);
+    recordRuleEvent("rule_value_removed", {
+      family:field.predicate,
+      value:value.id,
+      rule_id:removed.id,
+    });
+  }else{
+    const rule = {
+      id:nextRuleId++,
+      action:"MOVE",
+      conds:[simpleCondition(field, value)],
+      editor:null,
+    };
+    rules.push(rule);
+    recordRuleEvent("rule_value_added", {
+      family:field.predicate,
+      value:value.id,
+      rule_id:rule.id,
+    });
+  }
+  resetRunAfterRuleEdit();
+  renderRules();
+}
+
+function renderSimpleRuleEditor(){
+  const box = $("rules");
+  const actions = document.querySelector(".rulebook-actions");
+  const libraryPanel = document.querySelector(".library-panel");
+  if(actions) actions.hidden = true;
+  if(libraryPanel) libraryPanel.hidden = true;
+  box.innerHTML = "";
+
+  const editor = document.createElement("div");
+  editor.className = "simple-rule-editor";
+  const context = document.createElement("div");
+  context.className = "simple-rule-context";
+  context.textContent = "WHEN TWO ROBOTS MEET";
+  editor.appendChild(context);
+
+  const fields = EXPORTED_RULE_SCHEMA.fields || [];
+  const familyStep = document.createElement("section");
+  familyStep.className = "simple-rule-step";
+  familyStep.innerHTML = '<div class="simple-step-heading"><span>1</span><strong>Choose what the rule uses</strong></div>';
+  const familyButtons = document.createElement("div");
+  familyButtons.className = "simple-family-buttons";
+  fields.forEach(field => {
+    const button = document.createElement("button");
+    const selected = simpleFamilySelection === field.predicate;
+    button.type = "button";
+    button.className = `simple-family-button${selected ? " selected" : ""}`;
+    button.setAttribute("aria-pressed", String(selected));
+    button.innerHTML = field.predicate === "role"
+      ? `${icon("robot", "family-button-icon")}<span>Robot role</span>`
+      : '<span class="family-arrow-icon" aria-hidden="true">\u2197</span><span>Movement direction</span>';
+    button.onclick = () => chooseSimpleFamily(field);
+    familyButtons.appendChild(button);
+  });
+  familyStep.appendChild(familyButtons);
+  editor.appendChild(familyStep);
+
+  const field = simpleField(simpleFamilySelection);
+  const selectedValues = new Set(simpleSelectedValues().map(value => String(value.id)));
+  if(field){
+    const valueStep = document.createElement("section");
+    valueStep.className = "simple-rule-step";
+    const valueHeading = simpleFamilySelection === "role"
+      ? "Choose the role(s)"
+      : "Choose the direction(s)";
+    valueStep.innerHTML = `<div class="simple-step-heading"><span>2</span><strong>${valueHeading}</strong></div>`;
+    const valueGrid = document.createElement("div");
+    valueGrid.className = "simple-value-grid";
+    field.values.forEach(value => {
+      const button = document.createElement("button");
+      const selected = selectedValues.has(String(value.id));
+      button.type = "button";
+      button.className = `simple-value-button value-${field.predicate}${selected ? " selected" : ""}`;
+      button.dataset.family = field.predicate;
+      button.dataset.value = value.id;
+      button.setAttribute("aria-pressed", String(selected));
+      button.title = value.label;
+      if(field.predicate === "role"){
+        button.innerHTML = `<span class="simple-role-swatch" style="--role-color:${roleColor(value.id)}">${icon("robot", "simple-role-icon")}</span><span>${value.label}</span>`;
+      }else{
+        button.innerHTML = `<span class="simple-arrow-value">${value.symbol || MOVEMENT_ARROWS[value.id] || value.id}</span><span>${value.label}</span>`;
+      }
+      button.onclick = () => toggleSimpleValue(field, value);
+      valueGrid.appendChild(button);
+    });
+    valueStep.appendChild(valueGrid);
+    editor.appendChild(valueStep);
+  }
+
+  if(selectedValues.size){
+    const current = document.createElement("section");
+    current.className = "simple-current-rule";
+    current.innerHTML = `<span>CURRENT RULE</span><strong>${simpleRuleSentence()}</strong>`;
+    editor.appendChild(current);
+  }
+  box.appendChild(editor);
+
+  const count = $("rule-count");
+  if(count) count.textContent = `${simpleSelectedValues().length} values`;
+  const runButton = $("run");
+  if(runButton) runButton.disabled = selectedValues.size === 0;
+  renderRuleMatchPreview();
+  buildTabs();
+}
+
 function renderRules(){
+  if(SIMPLE_FAMILY_RULE_LANGUAGE){
+    renderSimpleRuleEditor();
+    return;
+  }
   const box = $("rules");
   box.innerHTML = "";
   $("rule-count").textContent = `${rules.filter(rule => rule.conds.length > 0).length} active`;
@@ -1250,6 +1582,13 @@ function renderRules(){
       label.className = "rule-group-label";
       label.textContent = "Active rules";
       box.appendChild(label);
+    }
+    if(rule.conds.length > 0 && activeRuleNumber > 0){
+      const separator = document.createElement("div");
+      separator.className = "rule-or-separator";
+      separator.textContent = "OR";
+      separator.setAttribute("aria-label", "or");
+      box.appendChild(separator);
     }
     const ruleLabel = rule.conds.length === 0
       ? ""
@@ -1297,7 +1636,9 @@ function renderRules(){
 
     const actionLine = document.createElement("div");
     actionLine.className = "rule-action-line";
-    actionLine.innerHTML = '<span class="kw2">FORBID</span><strong>MOVE INTO A SQUARE</strong>';
+    actionLine.innerHTML = CLEAN_RULE_LANGUAGE
+      ? '<strong>A ROBOT WAITS</strong>'
+      : '<span class="kw2">FORBID</span><strong>MOVE INTO A SQUARE</strong>';
     card.appendChild(actionLine);
 
     const conditions = document.createElement("div");
@@ -1366,15 +1707,10 @@ function renderRules(){
 
 function renderLegend(){
   const activeAgents = scn.agents.filter(agent => agent.active);
-  const roles = [...new Set(activeAgents.map(agent => agent.role))];
-  const roleTiles = roles.map(role => {
-    const symbol = roleLegendAvatar(role);
-    return legendTile(
-      symbol,
-      ROLE_ZH[role] || role,
-      GUIDE_COPY[role] || "",
-      "role-tile",
-    );
+  const robotTiles = activeAgents.map(agent => {
+    const movement = displayedMovement(agent);
+    const symbol = agentAvatar(agent, "legend-robot-avatar");
+    return `<div class="legend-tile robot-identity-tile" data-agent-id="${agent.id}">${symbol}<span class="legend-copy"><strong>Robot ${agentDisplayId(agent.id)}</strong><small>${ROLE_ZH[agent.role] || agent.role} \u00b7 ${MOVEMENT_ARROWS[movement] || movement}</small></span></div>`;
   }).join("");
 
   const markerTiles = [...new Set(Object.values(scn.machines).map(machine => machine.marker || "plain"))]
@@ -1392,7 +1728,7 @@ function renderLegend(){
         "passage-tile",
       )
     : "";
-  $("legend").innerHTML = `<section class="map-key compact-map-key" aria-labelledby="map-key-title"><h3 class="map-key-title" id="map-key-title">Key</h3><div class="legend-grid essential-key">${roleTiles}${passageTile}${markerTiles.join("")}</div></section>`;
+  $("legend").innerHTML = `<section class="map-key compact-map-key" aria-labelledby="map-key-title"><h3 class="map-key-title" id="map-key-title">Key</h3><div class="legend-grid essential-key">${robotTiles}${passageTile}${markerTiles.join("")}</div></section>`;
   const conditionLines = RULE_SCHEMA.map(object => {
     const fields = object.properties.map(property =>
       `${property.label}: ${property.values.map(value => value.label).join(" / ")}`
@@ -1407,18 +1743,33 @@ function renderLegend(){
     0
   );
   $("vocab").innerHTML = [
-    `<div class="vocab-summary">Typed MOVE-rule space · ${atomicPredicateCount} positive conditions · up to ${MAX_RULE_CONDITIONS} conditions</div>`,
+    `<div class="vocab-summary">${CLEAN_RULE_LANGUAGE ? "Waiting-rule" : "Typed MOVE-rule"} space · ${atomicPredicateCount} positive conditions · up to ${MAX_RULE_CONDITIONS} conditions</div>`,
     `<details class="vocab-detail"><summary>Show typed fields</summary><div>${conditionLines.join("<br>")}<br>Runs on this page = human attempts.</div></details>`
   ].join("");
+  renderRuleMatchPreview();
 }
 
 function ruleSummary(){
+  if(SIMPLE_FAMILY_RULE_LANGUAGE) return simpleRuleSentence();
   const active = rules.filter(r => r.conds.length > 0);
   if(active.length === 0) return "(no rules)";
   return active.map(ruleText).join("; ");
 }
 
 function ruleJson(sourceRules=rules){
+  if(SIMPLE_FAMILY_RULE_LANGUAGE){
+    const family = simpleFamilyFor(sourceRules);
+    const values = simpleSelectedValues(sourceRules, family);
+    if(!family || !values.length) return [];
+    return [{
+      rule_id:"shared_waiting_rule",
+      family,
+      predicate:family,
+      values:values.map(value => value.id),
+      value_join:"OR",
+      text:simpleRuleSentence(sourceRules),
+    }];
+  }
   return sourceRules
     .filter(r => r.conds.length > 0)
     .map(r => ({
@@ -1458,6 +1809,7 @@ function feedbackCellType(cell){
   if(Object.values(scn.machines).some(machine => sameCell(machine.cell, cell))){
     return "exit";
   }
+  if(scn.mergeCells.has(K(cell[0], cell[1]))) return "shared square";
   if(scn.passageCells.has(K(cell[0], cell[1]))) return "narrow passage";
   const zone = scn.zones[K(cell[0], cell[1])];
   if(zone === "cold") return "cold-storage area";
@@ -1475,17 +1827,18 @@ function lastWaitingFrame(result){
 }
 
 const FEEDBACK_DIRECTIONS = {
-  N:"northbound",
-  E:"eastbound",
-  S:"southbound",
-  W:"westbound",
+  N:"\u2191", NE:"\u2197", E:"\u2192", SE:"\u2198",
+  S:"\u2193", SW:"\u2199", W:"\u2190", NW:"\u2196",
 };
 
 function feedbackMove(id, frame){
-  const direction = frame?.agents?.[String(id)]?.intent?.dir;
-  return direction
-    ? `${feedbackAgent(id)} moving ${FEEDBACK_DIRECTIONS[direction] || direction}`
-    : feedbackAgent(id);
+  const agent = scn.agents.find(row => String(row.id) === String(id));
+  const direction = frame?.agents?.[String(id)]?.intent?.dir || agent?.movementArrow;
+  if(!direction) return feedbackAgent(id);
+  const role = SIMPLE_FAMILY_RULE_LANGUAGE ? ROLE_ZH[agent?.role] || agent?.role : null;
+  return SIMPLE_FAMILY_RULE_LANGUAGE
+    ? `${feedbackAgent(id)} (${role}, ${FEEDBACK_DIRECTIONS[direction] || direction})`
+    : `${feedbackAgent(id)} moving ${FEEDBACK_DIRECTIONS[direction] || direction}`;
 }
 
 function feedbackRuleMatches(result, frame, ids, passageContested=false){
@@ -1539,19 +1892,15 @@ function buildRunFeedback(result){
   const event = frame?.event || null;
   const step = frame?.tick ?? Math.max(0, (result.frames?.length || 1) - 1);
   const ids = event?.agents || (event?.agent !== undefined ? [event.agent] : []);
-  const robots = ids.map(id => feedbackAgent(id, frame)).join(" and ");
+  const robots = SIMPLE_FAMILY_RULE_LANGUAGE
+    ? joinedMoves(ids, frame)
+    : ids.map(id => feedbackAgent(id, frame)).join(" and ");
   const square = feedbackCellType(event?.cell);
 
   if(result.ok){
-    const waits = new Set();
-    (result.frames || []).forEach(row => {
-      Object.entries(row.agents || {}).forEach(([id, meta]) => {
-        if(meta.waiting) waits.add(id);
-      });
-    });
     return {
-      title:"That worked!",
-      observation:`Every robot reached its destination in ${step} steps${waits.size ? `. Your rule asked ${[...waits].map(id => feedbackAgent(id)).join(" and ")} to wait at the right moment` : ""}.`,
+      title:"Success",
+      observation:"Every robot reached its matching letter.",
       kind:"ok",
     };
   }
@@ -1581,8 +1930,8 @@ function buildRunFeedback(result){
       ? `${matchedRules.join(" and ")} did not make exactly one of them wait.`
       : `Neither current rule matched ${joinedMoves(ids, frame)}, so neither robot waited.`;
     return {
-      title:"No rule resolved this meeting",
-      observation:`At step ${step}, ${robots} tried to enter the same ${square}. ${coverage} Adjust a rule so one of these two approaches waits.`,
+      title:"Both robots tried to enter the same square",
+      observation:`At step ${step}, ${robots} arrived together. ${coverage} Select one of their roles or movement directions so exactly one waits.`,
       kind:"bad",
     };
   }
@@ -1606,14 +1955,14 @@ function buildRunFeedback(result){
   }
   if(result.reason === "lane-blocked"){
     const blocker = event?.blocking_agent !== undefined
-      ? feedbackAgent(event.blocking_agent)
+      ? feedbackMove(event.blocking_agent, frame)
       : "The robot at the near destination";
     const traveler = event?.moving_agent !== undefined
-      ? feedbackAgent(event.moving_agent)
+      ? feedbackMove(event.moving_agent, frame)
       : "the other robot";
     return {
-      title:"The lane was blocked",
-      observation:`${blocker} stopped at the near destination before ${traveler} could reach the far destination. Try the other order.`,
+      title:"The wrong robot went first",
+      observation:`${blocker} reached the near destination first and blocked ${traveler}'s route to the farther destination. Change the rule so the first robot waits when they meet.`,
       kind:"bad",
     };
   }
@@ -1684,7 +2033,23 @@ function setRunFeedback(result){
   const observation = document.createElement("span");
   observation.textContent = feedback.observation;
   status.append(title, observation);
+  updateContinueButton();
   return feedback;
+}
+
+function updateContinueButton(){
+  const button = $("continue");
+  if(!button) return;
+  const nextTask = TASKS[curIndex + 1];
+  const canContinue = !!lastResult?.ok && !!nextTask && taskUnlocked(nextTask);
+  button.hidden = !canContinue;
+  if(canContinue) button.textContent = `Next: ${nextTask.label} \u2192`;
+  const runButton = $("run");
+  if(runButton){
+    runButton.textContent = lastResult?.ok ? "Run again" : "Run rule";
+    runButton.classList.toggle("primary", !lastResult?.ok);
+    runButton.classList.toggle("secondary-run", !!lastResult?.ok);
+  }
 }
 
 function closeNotice(){
@@ -1710,10 +2075,20 @@ function updateFrameButtons(){
   prev.disabled = !enabled || frameIndex <= 0;
   next.disabled = !enabled || frameIndex >= lastFrames.length - 1;
   if(label){
-    label.textContent = enabled
-      ? `Step ${frameIndex} / ${lastFrames.length - 1}`
-      : "Step 0 / 0";
+    label.textContent = enabled ? frameStepLabel(frameIndex) : "Ready";
   }
+}
+
+function frameStepLabel(index){
+  if(!lastFrames.length || index <= 0) return "Start";
+  const frame = lastFrames[index];
+  const total = lastFrames.length - 1;
+  const waiting = Object.values(frame?.agents || {}).some(agent => agent.waiting);
+  const failed = frame?.event && frame.event.type !== "machine-complete";
+  if(lastResult?.ok && index === total) return `Finish · ${index}/${total}`;
+  if(failed && index === total) return `Conflict · ${index}/${total}`;
+  if(waiting) return `Wait · ${index}/${total}`;
+  return `Move · ${index}/${total}`;
 }
 
 function showFrameAt(index, updateStatus=true){
@@ -1724,7 +2099,9 @@ function showFrameAt(index, updateStatus=true){
     if(lastResult && frameIndex === lastFrames.length - 1){
       setRunFeedback(lastResult);
     }else{
-      setStatus(`Step ${frameIndex}/${lastFrames.length - 1}`, "");
+      setStatus(frameIndex === 0
+        ? "Start: every robot is ready to follow its shortest route."
+        : `${frameStepLabel(frameIndex)}: use the arrows to inspect what happened.`, "");
     }
   }
 }
@@ -1735,7 +2112,7 @@ function currentNorms(){
     .filter(({rule}) => rule.conds.length > 0)
     .map(({rule, index}) => ({
       action:"MOVE",
-      feedbackLabel:`Rule ${index + 1}`,
+      feedbackLabel:SIMPLE_FAMILY_RULE_LANGUAGE ? "Your current rule" : `Rule ${index + 1}`,
       conds:rule.conds.map(condition => ({
         p:condition.p,
         v:condition.v,
@@ -1757,8 +2134,16 @@ function libraryNorms(){
     }));
 }
 
-function play(){
+function play(trigger="manual"){
   if(timer){ clearInterval(timer); timer = null; }
+  const continueButton = $("continue");
+  if(continueButton) continueButton.hidden = true;
+  const runButton = $("run");
+  if(runButton){
+    runButton.textContent = "Run rule";
+    runButton.classList.add("primary");
+    runButton.classList.remove("secondary-run");
+  }
   const norms = currentNorms();
   const result = simulate(scn, norms);
   result.testedNorms = norms.map(norm => ({
@@ -1772,6 +2157,17 @@ function play(){
   shiftState.lastOk = result.ok;
   shiftState.testedRevision = rulebookRevision;
   shiftState.attempts += 1;
+  if(result.ok && curIndex === 0 && !activeTaskBranch && SIMPLE_FAMILY_RULE_LANGUAGE){
+    const branch = simpleFamilySelection === "role" ? "role" : "movement";
+    if(activateTaskBranch(branch)){
+      result.activatedBranch = branch;
+      recordRuleEvent("curriculum_branch_selected", {
+        branch,
+        selected_family:simpleFamilySelection,
+        trigger:"first_successful_t1_rule",
+      });
+    }
+  }
   if(!FREE_ORDER && result.ok){
     const newlyUnlocked = unlockedTasks().filter(task => !availableBefore.has(task.id));
     if(newlyUnlocked.length){
@@ -1795,6 +2191,8 @@ function play(){
   const record = {
     participant_id: null,
     experiment_version:RAW_LIBRARY.experiment_version || 2,
+    curriculum_branch:activeTaskBranch,
+    run_trigger:trigger,
     shift_id: scn.id,
     shift_label: scn.label,
     shift_attempt_index:shiftState.attempts,
@@ -1835,7 +2233,7 @@ function play(){
       timer = null;
       setRunFeedback(result);
     }
-  }, 280);
+  }, 360);
 }
 
 function resetBoard(){
@@ -1844,8 +2242,9 @@ function resetBoard(){
   lastFrames = [];
   frameIndex = 0;
   buildBoard();
-  setStatus("The board has been reset.", "");
+  setStatus("Ready to replay this rule from the start.", "");
   updateFrameButtons();
+  updateContinueButton();
 }
 
 function download(name, mime, content){
@@ -1861,6 +2260,7 @@ function download(name, mime, content){
 function exportJson(){
   const payload = {
     experiment_version:RAW_LIBRARY.experiment_version || null,
+    curriculum_branch:activeTaskBranch,
     tutorial:window.tutorialReport || null,
     rule_events:ruleEvents,
     runs,
@@ -1869,7 +2269,7 @@ function exportJson(){
 }
 
 function exportCsv(){
-  const cols = ["shift_id","shift_label","shift_attempt_index","global_attempt_index","rulebook_revision","active_rule_ids","active_library_rule_ids","saved_library_rule_ids","ok","reason","feedback_observation","rule_summary","time_from_trial_start_ms","time_from_experiment_start_ms","time_from_last_attempt_ms","timestamp"];
+  const cols = ["shift_id","shift_label","curriculum_branch","run_trigger","shift_attempt_index","global_attempt_index","rulebook_revision","active_rule_ids","active_library_rule_ids","saved_library_rule_ids","ok","reason","feedback_observation","rule_summary","time_from_trial_start_ms","time_from_experiment_start_ms","time_from_last_attempt_ms","timestamp"];
   const esc = v => '"' + String(v ?? "").replaceAll('"', '""') + '"';
   const rows = [cols.join(",")].concat(runs.map(r => cols.map(c => esc(r[c])).join(",")));
   download("norm-task-log.csv", "text/csv", rows.join("\n") + "\n");
@@ -1887,7 +2287,9 @@ function startTaskAfterTutorial(){
   lastRuleEventIndex = ruleEvents.length;
   window.scrollTo(0, 0);
   if(scn.starter_rulebook?.length){
-    setStatus("A starter rule is ready. Run it to begin, then edit it when the map changes.", "");
+    setStatus("A starter rule is set. The outlined robot matches it. Run the rule.", "");
+  }else if(SIMPLE_FAMILY_RULE_LANGUAGE && !simpleSelectedValues().length){
+    setStatus("Choose what the rule uses to begin.", "");
   }
   if(shouldAutoShowGuide(scn)){
     setTimeout(() => showSceneGuide(), 0);
@@ -1895,6 +2297,10 @@ function startTaskAfterTutorial(){
 }
 
 function initializeTutorial(){
+  if(SIMPLE_FAMILY_RULE_LANGUAGE){
+    startTaskAfterTutorial();
+    return;
+  }
   const screen = $("tutorial-screen");
   if(!screen || !window.ResearchTutorial){
     startTaskAfterTutorial();
@@ -1913,6 +2319,7 @@ function renderAll(){
   renderRules();
   renderLegend();
   renderLog();
+  updateContinueButton();
 }
 
 if(!TASKS.length){
@@ -1920,8 +2327,10 @@ if(!TASKS.length){
 }else{
   const researcherPanel = $("researcher-panel");
   if(researcherPanel) researcherPanel.hidden = !DEBUG_UI;
-  $("run").onclick = play;
-  $("reset").onclick = resetBoard;
+  $("run").onclick = () => play("manual");
+  $("continue").onclick = () => {
+    if(curIndex < TASKS.length - 1) switchTask(curIndex + 1);
+  };
   $("prev").onclick = () => showFrameAt(frameIndex - 1);
   $("next").onclick = () => showFrameAt(frameIndex + 1);
   $("guide-close").onclick = closeSceneGuide;
@@ -1939,6 +2348,7 @@ if(!TASKS.length){
     }
   });
   $("addrule").onclick = () => {
+    if(SIMPLE_FAMILY_RULE_LANGUAGE) return;
     const rule = { id:nextRuleId++, action:"MOVE", conds:[], editor:null };
     rules.push(rule);
     recordRuleEvent("rule_added", {rule_id:rule.id, rule_index:rules.length - 1});
@@ -1947,6 +2357,9 @@ if(!TASKS.length){
   $("export-json").onclick = exportJson;
   $("export-csv").onclick = exportCsv;
   rules = sceneRuleDrafts.get(scn.id) || loadStarterRules(scn);
+  if(SIMPLE_FAMILY_RULE_LANGUAGE){
+    simpleFamilySelection = rules[0]?.conds?.[0]?.p || null;
+  }
   renderAll();
   if(SKIP_TUTORIAL) startTaskAfterTutorial();
   else initializeTutorial();

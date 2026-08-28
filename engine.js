@@ -1,12 +1,20 @@
 /* Solver-backed social-norm engine.  The task definitions come from
  * data/tasks.generated.js, which is produced by solver/task_generator.py. */
 
-const DIRS = { N:[-1,0], S:[1,0], E:[0,1], W:[0,-1] };
-const TURN_ORDER = ["N", "E", "S", "W"];
+const DIRS = {
+  N:[-1,0], NE:[-1,1], E:[0,1], SE:[1,1],
+  S:[1,0], SW:[1,-1], W:[0,-1], NW:[-1,-1],
+};
+const TURN_ORDER = Object.keys(DIRS);
+const DIAGONAL_DIRS = new Set(["NE", "SE", "SW", "NW"]);
 const K = (r,c) => r + "," + c;
+const edgeKey = (first, second) => [K(first[0], first[1]), K(second[0], second[1])].sort().join("|");
 const COL = ["#d85a30", "#378add", "#1d9e75", "#8b5fbf", "#b36b00", "#56606b", "#b0446f", "#2d7d87", "#746d2f"];
+const CLEAN_RULE_LANGUAGE = new URLSearchParams(window.location.search).get("language") === "clean";
 
 const RAW_LIBRARY = window.TASK_LIBRARY || { global_actions: [], global_vocabulary: [], action_condition_space: {}, tasks: [] };
+const SIMPLE_FAMILY_RULE_LANGUAGE = RAW_LIBRARY.rule_schema?.mode === "single_family_set";
+const WAITING_RULE_LANGUAGE = CLEAN_RULE_LANGUAGE || SIMPLE_FAMILY_RULE_LANGUAGE;
 
 const ACTION_ZH = { MOVE:"move into a square" };
 const LABEL_ZH = {
@@ -18,9 +26,13 @@ const LABEL_ZH = {
   "carrying:glass": "the robot is carrying glass",
   "carrying:valuable": "the robot is carrying a valuable item",
   "move_dir:N": "the robot is moving north",
+  "move_dir:NE": "the robot is moving north-east",
   "move_dir:S": "the robot is moving south",
+  "move_dir:SE": "the robot is moving south-east",
   "move_dir:E": "the robot is moving east",
+  "move_dir:SW": "the robot is moving south-west",
   "move_dir:W": "the robot is moving west",
+  "move_dir:NW": "the robot is moving north-west",
   "station_marker:red": "the target station is red",
   "station_marker:blue": "the target station is blue",
   "station_marker:green": "the target station is green",
@@ -38,7 +50,17 @@ const LABEL_ZH = {
   "no_permit:true": "the robot has no permit",
 };
 
-const ROLE_ZH = { carrier:"Carrier", cleaner:"Cleaner", operator:"Operator" };
+const ROLE_ZH = {
+  carrier:"Carrier",
+  operator:"Operator",
+  inspector:"Inspector",
+  loader:"Loader",
+  technician:"Technician",
+  courier:"Courier",
+  scout:"Scout",
+  guard:"Guard",
+  cleaner:"Cleaner",
+};
 const CARRY_ZH = { none:"none", spill:"spill", glass:"glass", valuable:"valuable item" };
 const ZONE_ZH = {
   cold:"Cold storage square",
@@ -106,6 +128,13 @@ function normalizeTask(task){
     (passage.entrances || []).forEach(cell => passageEntrances.add(K(cell[0], cell[1])));
   });
   const scanners = new Set((task.world.scanners || []).map(c => K(c[0], c[1])));
+  const diagonalEdgePairs = (task.world.diagonal_edges || []).map(pair => [
+    pair[0].slice(),
+    pair[1].slice(),
+  ]);
+  const mergeCells = new Set(
+    (task.world.merge_cells || []).map(cell => K(cell[0], cell[1]))
+  );
   return {
     id: task.id,
     level: task.level,
@@ -134,10 +163,14 @@ function normalizeTask(task){
     passageByCell,
     scanners,
     priorityRole: task.world.priority_role || null,
+    diagonalEdgePairs,
+    diagonalEdges:new Set(diagonalEdgePairs.map(pair => edgeKey(pair[0], pair[1]))),
+    mergeCells,
     agents: task.world.agents.map(a => ({
       id: a.id,
       pos: a.start.slice(),
       role: a.role,
+      movementArrow:a.movement_arrow || null,
       carrying: a.carrying,
       active:a.active !== false,
       tokens: a.tokens || [],
@@ -162,8 +195,10 @@ function passable(world, cell){
 function sameCell(a, b){ return a && b && a[0] === b[0] && a[1] === b[1]; }
 function turnAfter(approach, departure){
   if(!approach || !departure) return null;
-  const delta = (TURN_ORDER.indexOf(departure) - TURN_ORDER.indexOf(approach) + 4) % 4;
-  return ({0:"straight", 1:"right", 3:"left"})[delta] || "u_turn";
+  const delta = (TURN_ORDER.indexOf(departure) - TURN_ORDER.indexOf(approach) + 8) % 8;
+  if(delta === 0) return "straight";
+  if(delta === 4) return "u_turn";
+  return delta < 4 ? "right" : "left";
 }
 
 function stepLabel(step){
@@ -214,8 +249,9 @@ const hasPassageCondition = norm => norm.conds.some(
 );
 const isDynamic = norm => norm.conds.some(
   c => c.p === "contested" || (c.p === "target_type" && c.v === "passage")
-);
+ ) || WAITING_RULE_LANGUAGE;
 const matchesNorm = (norm, ctx) => {
+  if(WAITING_RULE_LANGUAGE && !ctx.contested && !ctx.passageContested) return false;
   if(ctx.passageContested && !hasPassageCondition(norm)) return false;
   if(hasPassageCondition(norm) && !ctx.passageContested) return false;
   return norm.action === ctx.action && norm.conds.every(c => atom(ctx, c) !== !!c.negated);
@@ -287,6 +323,7 @@ function plan(world, agent, staticNorms){
 
     for(const d in DIRS){
       const nxt = [cur.cell[0] + DIRS[d][0], cur.cell[1] + DIRS[d][1]];
+      if(DIAGONAL_DIRS.has(d) && !world.diagonalEdges.has(edgeKey(cur.cell, nxt))) continue;
       if(passable(world, nxt) && !staticForbidden(world, agent, staticNorms, "MOVE", { cell:nxt, moveDir:d })){
         succ.push({
           step:{ kind:"move", cell:nxt, dir:d },
@@ -422,6 +459,8 @@ function simulate(scn, rules){
     passageByCell:scn.passageByCell,
     scanners:scn.scanners,
     priorityRole:scn.priorityRole,
+    diagonalEdgePairs:scn.diagonalEdgePairs,
+    diagonalEdges:scn.diagonalEdges,
   };
   Object.values(world.items).forEach(item => { item.cell = item.cell.slice(); });
   const staticNorms = rules.filter(n => !isDynamic(n));
@@ -560,6 +599,19 @@ function simulate(scn, rules){
     Object.entries(entryPassages).forEach(([id, passageId]) => {
       if(occupiedPassages[passageId]?.length) blocked.add(Number(id));
     });
+
+    const unfinished = scn.agents.filter(agent => !done(agent.id));
+    if(unfinished.length && unfinished.every(agent => blocked.has(agent.id))){
+      return {
+        ok:false,
+        reason:"timeout",
+        frames:[...frames, snapshot(scn, pos, {
+          type:"timeout",
+          cell:intend[unfinished[0].id]?.cell || pos[unfinished[0].id],
+          agents:unfinished.map(agent => agent.id),
+        }, {plans, ptr, intend, blocked, released, tick:t + 1})],
+      };
+    }
 
     const passageEntries = {};
     Object.entries(entryPassages).forEach(([id, passageId]) => {

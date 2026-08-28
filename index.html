@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Coordination Rules</title>
-<link rel="stylesheet" href="styles.css?v=local-search-pilot-v38">
+<link rel="stylesheet" href="styles.css?v=role-movement-v10">
 </head>
 <body>
 <div class="onboarding-screen" id="tutorial-screen" hidden>
@@ -88,13 +88,13 @@
       <div class="agent-panel" id="agent-progress"></div>
       <div class="scene-bottom-controls">
         <div class="controls scene-run-controls">
-          <button class="btn primary" id="run">Run</button>
+          <button class="btn primary" id="run">Run rule</button>
           <div class="step-nav" aria-label="Animation step controls">
             <button class="btn step-button" id="prev" aria-label="Previous step" title="Previous step">←</button>
             <span class="step-label" id="step-label">Step 0 / 0</span>
             <button class="btn step-button" id="next" aria-label="Next step" title="Next step">→</button>
           </div>
-          <button class="btn text-button" id="reset">Reset</button>
+          <button class="btn next-trial-button" id="continue" hidden>Next trial →</button>
         </div>
       </div>
     </section>
@@ -151,9 +151,9 @@
   </section>
 </div>
 
-<script src="data/tasks.generated.js?v=local-search-pilot-v48"></script>
-<script src="engine.js?v=local-search-pilot-v38"></script>
+<script src="data/tasks.generated.js?v=role-movement-v10"></script>
+<script src="engine.js?v=role-movement-v10"></script>
 <script src="tutorial.js?v=local-search-pilot-v32"></script>
-<script src="app.js?v=local-search-pilot-v43"></script>
+<script src="app.js?v=role-movement-v10"></script>
 </body>
 </html>
