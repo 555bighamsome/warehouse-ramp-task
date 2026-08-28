@@ -1708,9 +1708,8 @@ function renderRules(){
 function renderLegend(){
   const activeAgents = scn.agents.filter(agent => agent.active);
   const robotTiles = activeAgents.map(agent => {
-    const movement = displayedMovement(agent);
     const symbol = agentAvatar(agent, "legend-robot-avatar");
-    return `<div class="legend-tile robot-identity-tile" data-agent-id="${agent.id}">${symbol}<span class="legend-copy"><strong>Robot ${agentDisplayId(agent.id)}</strong><small>${ROLE_ZH[agent.role] || agent.role} \u00b7 ${MOVEMENT_ARROWS[movement] || movement}</small></span></div>`;
+    return `<div class="legend-tile robot-identity-tile" data-agent-id="${agent.id}">${symbol}<span class="legend-copy"><strong>Robot ${agentDisplayId(agent.id)}</strong><small>${ROLE_ZH[agent.role] || agent.role}</small></span></div>`;
   }).join("");
 
   const markerTiles = [...new Set(Object.values(scn.machines).map(machine => machine.marker || "plain"))]
