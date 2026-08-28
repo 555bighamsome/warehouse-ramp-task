@@ -13,6 +13,7 @@ const STEP_MS = 420;
 
 let emit = () => {};
 let finish = () => {};
+let tutorialMode = "standard";
 
 const state = {
   page:0,
@@ -43,7 +44,7 @@ function agentDisplayId(id){
   return label;
 }
 
-function makeScene(id, walls, agents){
+function makeScene(id, walls, agents, options={}){
   return normalizeTask({
     id,
     level:0,
@@ -59,14 +60,15 @@ function makeScene(id, walls, agents){
     solver:null,
     baseline:null,
     world:{
-      rows:5,
-      cols:7,
+      rows:options.rows || 5,
+      cols:options.cols || 7,
       walls,
       zones:[],
       protected:[],
       items:[],
       machines:[],
       scanners:[],
+      diagonal_edges:options.diagonalEdges || [],
       agents,
     },
   });
@@ -82,6 +84,29 @@ function carrier(id, start, target){
     tokens:[],
     goal:{kind:"reach", target},
   };
+}
+
+function tutorialRobot(id, start, target, role){
+  return {
+    id,
+    start,
+    role,
+    carrying:"none",
+    active:true,
+    tokens:[],
+    goal:{kind:"reach", target},
+  };
+}
+
+function wallsOutside(openCells, rows=5, cols=7){
+  const open = new Set(openCells.map(cell => `${cell[0]},${cell[1]}`));
+  const walls = [];
+  for(let row = 0; row < rows; row += 1){
+    for(let col = 0; col < cols; col += 1){
+      if(!open.has(`${row},${col}`)) walls.push([row, col]);
+    }
+  }
+  return walls;
 }
 
 const MOVEMENT_SCENE = makeScene(
@@ -112,6 +137,26 @@ const RULE_REUSE_SCENE = makeScene(
   [carrier(0, [0,3], [4,3])],
 );
 RULE_REUSE_SCENE.practiceMarked = [2,3];
+
+const SIMPLE_CONFLICT_OPEN = [
+  [2,1], [2,2], [2,3],
+  [4,3], [3,3],
+  [1,4], [0,5],
+];
+const SIMPLE_CONFLICT_SCENE = makeScene(
+  "tutorial_shared_square",
+  wallsOutside(SIMPLE_CONFLICT_OPEN),
+  [
+    tutorialRobot(0, [2,1], [1,4], "operator"),
+    tutorialRobot(1, [4,3], [0,5], "scout"),
+  ],
+  {
+    diagonalEdges:[
+      [[2,3], [1,4]],
+      [[1,4], [0,5]],
+    ],
+  },
+);
 
 const ALL_PAGES = [
   {
@@ -190,7 +235,39 @@ const ALL_PAGES = [
 
 // Rule carry-over is controlled by the assigned experimental condition.
 // The optional library would create a second participant-controlled path.
-const PAGES = ALL_PAGES.filter(page => page.id !== "library");
+const DEFAULT_PAGES = ALL_PAGES.filter(page => page.id !== "library");
+
+const SIMPLE_PAGES = [
+  {
+    id:"simple_encounter",
+    title:"Watch one encounter",
+    lead:"Robots follow their routes at the same time. Press Run and watch the square where their routes meet.",
+    points:[
+      "Each robot must reach the destination with the same letter.",
+      "If two robots enter the same square together, they collide.",
+      "The arrow above a robot shows its movement on that step, so it can change along the route.",
+    ],
+    scene:SIMPLE_CONFLICT_SCENE,
+    controls:true,
+    initialNote:"Press Run to watch the two routes meet.",
+  },
+  {
+    id:"simple_rule",
+    title:"Choose one way to identify who waits",
+    lead:"One shared rule applies whenever two robots meet. Exactly one of the two robots should match it.",
+    points:[
+      "First choose either Movement direction or Robot role.",
+      "Then choose one or more values. Multiple values are joined by OR automatically.",
+      "The rule carries into the next trial, where you can keep it or edit it.",
+    ],
+    scene:SIMPLE_CONFLICT_SCENE,
+    controls:false,
+    initialNote:"The two example rules below identify the same robot.",
+    reference:"simple_rule",
+  },
+];
+
+let PAGES = DEFAULT_PAGES;
 
 const el = id => document.getElementById(id);
 
@@ -205,6 +282,23 @@ function drawBoard(host, scene, frame=null){
   host.innerHTML = "";
   host.style.width = `${scene.cols * CELL}px`;
   host.style.height = `${scene.rows * CELL}px`;
+
+  (scene.diagonalEdgePairs || []).forEach(([first, second]) => {
+    const firstX = first[1] * CELL + (CELL - 4) / 2;
+    const firstY = first[0] * CELL + (CELL - 4) / 2;
+    const secondX = second[1] * CELL + (CELL - 4) / 2;
+    const secondY = second[0] * CELL + (CELL - 4) / 2;
+    const dx = secondX - firstX;
+    const dy = secondY - firstY;
+    const link = document.createElement("div");
+    link.className = "diagonal-road-link tut-diagonal-road-link";
+    link.style.left = `${firstX}px`;
+    link.style.top = `${firstY}px`;
+    link.style.width = `${Math.hypot(dx, dy)}px`;
+    link.style.height = `${Math.max(8, CELL - 8)}px`;
+    link.style.transform = `translateY(-50%) rotate(${Math.atan2(dy, dx)}rad)`;
+    host.appendChild(link);
+  });
 
   for(let row = 0; row < scene.rows; row += 1){
     for(let col = 0; col < scene.cols; col += 1){
@@ -250,8 +344,11 @@ function drawBoard(host, scene, frame=null){
     robot.style.width = `${CELL - 14}px`;
     robot.style.height = `${CELL - 14}px`;
     robot.style.background = COL[agent.id % COL.length];
-    robot.innerHTML = icon("carrier", "robot-role") +
+    const direction = meta.intent?.dir || agent.movementArrow;
+    const arrows = {N:"↑", NE:"↗", E:"→", SE:"↘", S:"↓", SW:"↙", W:"←", NW:"↖"};
+    robot.innerHTML = icon(tutorialMode === "simple" ? "robot" : (agent.role || "robot"), "robot-role") +
       `<span class="robot-id">${agentDisplayId(agent.id)}</span>` +
+      (direction ? `<span class="tut-robot-arrow" aria-label="Moving ${direction}">${arrows[direction] || direction}</span>` : "") +
       (meta.failed ? icon("failed", "robot-state-mark") : "") +
       (meta.done ? icon("done", "robot-state-mark") : "");
     host.appendChild(robot);
@@ -453,6 +550,23 @@ function mapReferenceMarkup(){
   `;
 }
 
+function simpleRuleReferenceMarkup(){
+  return `
+    <div class="tut-simple-rule-demo" aria-label="Two equivalent example rules">
+      <div class="tut-simple-rule-choice">
+        <span class="tut-simple-family">Movement direction</span>
+        <strong>When robots meet, the robot moving → waits.</strong>
+      </div>
+      <span class="tut-simple-or">OR</span>
+      <div class="tut-simple-rule-choice">
+        <span class="tut-simple-family">Robot role</span>
+        <strong>When robots meet, the Operator waits.</strong>
+      </div>
+    </div>
+    <p class="tut-simple-rule-note">In this example, both rules identify Robot A. In the task, you choose one family first, then its values.</p>
+  `;
+}
+
 const PRACTICE_TERMS = {
   practice:[
     {id:"marked", label:"marked", text:"the practice object is marked"},
@@ -634,6 +748,7 @@ function renderReference(kind){
   host.hidden = !kind;
   if(!kind) return;
   if(kind === "map") host.innerHTML = mapReferenceMarkup();
+  if(kind === "simple_rule") host.innerHTML = simpleRuleReferenceMarkup();
   if(kind === "rule"){
     host.innerHTML = ruleReferenceMarkup();
     bindRulePractice();
@@ -754,8 +869,9 @@ function bind(){
   };
 }
 
-window.ResearchTutorial = {
-  start(options={}){
+function startTutorial(options={}, mode="standard"){
+    tutorialMode = mode;
+    PAGES = mode === "simple" ? SIMPLE_PAGES : DEFAULT_PAGES;
     emit = options.log || (() => {});
     finish = options.onComplete || (() => {});
     const screen = el("tutorial-screen");
@@ -765,6 +881,8 @@ window.ResearchTutorial = {
     }
     state.startedAt = Date.now();
     state.pageStartedAt = 0;
+    state.pageVisits = [];
+    state.runs = [];
     state.practiceCondition = null;
     state.practiceSolved = false;
     state.practiceSaved = false;
@@ -774,9 +892,17 @@ window.ResearchTutorial = {
     document.querySelector(".wrap")?.setAttribute("aria-hidden", "true");
     screen.hidden = false;
     bind();
-    emit("tutorial_started", {page_count:PAGES.length});
+    emit("tutorial_started", {page_count:PAGES.length, tutorial_mode:tutorialMode});
     renderPage(0);
     el("tut-continue").focus();
+}
+
+window.ResearchTutorial = {
+  start(options={}){
+    startTutorial(options, "standard");
+  },
+  startSimple(options={}){
+    startTutorial(options, "simple");
   },
 };
 

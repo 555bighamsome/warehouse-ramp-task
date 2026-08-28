@@ -22,7 +22,7 @@ lettered destination. When two robots reach the same square together, exactly
 one must wait. A robot that stops at the nearer destination blocks the shared
 lane if it enters first.
 
-Each trial contains two to four active encounters. One shared rule applies to
+Each trial contains one to four active encounters. One shared rule applies to
 all of them, so a participant must find a value set that works globally rather
 than repair each encounter independently.
 
@@ -46,7 +46,7 @@ experimental language.
 
 ## Mirror curricula
 
-T1 has two encounters and admits matched one-value solutions:
+T1 has one encounter and admits matched one-value solutions:
 
 ```text
 Movement = north
@@ -63,13 +63,13 @@ The minimum Movement solution follows:
 | Trial | Values | Edit | Compact alternative |
 | --- | --- | --- | --- |
 | T1 | N | start | Carrier |
-| T2 | N, S | add S | Carrier |
-| T3 | N, NE, S | add NE | Carrier |
-| T4 | NE, E, S | replace N with E | Carrier |
-| T5 | NE, E, S, SW | add SW | Carrier |
-| T6 | NE, E, SW, W | replace S with W | Carrier |
-| T7 | E, SE, SW, W | replace NE with SE | Carrier |
-| T8 | N, SE, SW, W | replace E with N | Carrier |
+| T2 | N, NE | add NE | Carrier |
+| T3 | NE, E | replace N with E | Carrier |
+| T4 | NE, E, SE | add SE | Carrier |
+| T5 | E, SE, S | replace NE with S | Carrier |
+| T6 | E, SE, S, SW | add SW | Carrier |
+| T7 | SE, S, SW, W | replace E with W | Carrier |
+| T8 | S, SW, W, NW | replace SE with NW | Carrier |
 
 ### Role-local branch
 
@@ -110,13 +110,13 @@ values and all eight Movement values. For every trial it verifies that:
 The minimum local length is:
 
 ```text
-1, 2, 3, 3, 4, 4, 4, 4
+1, 2, 2, 3, 3, 4, 4, 4
 ```
 
 and the transition sequence is:
 
 ```text
-add, add, replace, add, replace, replace, replace
+add, replace, add, replace, add, replace, replace
 ```
 
 ## Model compatibility

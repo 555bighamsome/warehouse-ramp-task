@@ -20,7 +20,7 @@
         "role_successful_sets": 64,
         "movement_successful_sets": 64,
         "local_update": "start",
-        "active_encounters": 2
+        "active_encounters": 1
       },
       {
         "trial": 2,
@@ -32,7 +32,7 @@
         "movement_minimum_values": 2,
         "intended_local_values": [
           "N",
-          "S"
+          "NE"
         ],
         "compact_values": [
           "carrier"
@@ -40,7 +40,7 @@
         "role_successful_sets": 32,
         "movement_successful_sets": 32,
         "local_update": "add_one_or_value",
-        "active_encounters": 3
+        "active_encounters": 2
       },
       {
         "trial": 3,
@@ -49,19 +49,18 @@
         "compact_family": "role",
         "baseline_reason": "collision",
         "role_minimum_values": 1,
-        "movement_minimum_values": 3,
+        "movement_minimum_values": 2,
         "intended_local_values": [
-          "N",
           "NE",
-          "S"
+          "E"
         ],
         "compact_values": [
           "carrier"
         ],
-        "role_successful_sets": 16,
-        "movement_successful_sets": 16,
-        "local_update": "add_one_or_value",
-        "active_encounters": 4
+        "role_successful_sets": 32,
+        "movement_successful_sets": 32,
+        "local_update": "replace_one_or_value",
+        "active_encounters": 2
       },
       {
         "trial": 4,
@@ -74,6 +73,27 @@
         "intended_local_values": [
           "NE",
           "E",
+          "SE"
+        ],
+        "compact_values": [
+          "carrier"
+        ],
+        "role_successful_sets": 16,
+        "movement_successful_sets": 16,
+        "local_update": "add_one_or_value",
+        "active_encounters": 3
+      },
+      {
+        "trial": 5,
+        "branch": "movement",
+        "local_family": "movement",
+        "compact_family": "role",
+        "baseline_reason": "collision",
+        "role_minimum_values": 1,
+        "movement_minimum_values": 3,
+        "intended_local_values": [
+          "E",
+          "SE",
           "S"
         ],
         "compact_values": [
@@ -85,7 +105,7 @@
         "active_encounters": 3
       },
       {
-        "trial": 5,
+        "trial": 6,
         "branch": "movement",
         "local_family": "movement",
         "compact_family": "role",
@@ -93,8 +113,8 @@
         "role_minimum_values": 1,
         "movement_minimum_values": 4,
         "intended_local_values": [
-          "NE",
           "E",
+          "SE",
           "S",
           "SW"
         ],
@@ -107,28 +127,6 @@
         "active_encounters": 4
       },
       {
-        "trial": 6,
-        "branch": "movement",
-        "local_family": "movement",
-        "compact_family": "role",
-        "baseline_reason": "collision",
-        "role_minimum_values": 1,
-        "movement_minimum_values": 4,
-        "intended_local_values": [
-          "NE",
-          "E",
-          "SW",
-          "W"
-        ],
-        "compact_values": [
-          "carrier"
-        ],
-        "role_successful_sets": 8,
-        "movement_successful_sets": 8,
-        "local_update": "replace_one_or_value",
-        "active_encounters": 4
-      },
-      {
         "trial": 7,
         "branch": "movement",
         "local_family": "movement",
@@ -137,8 +135,8 @@
         "role_minimum_values": 1,
         "movement_minimum_values": 4,
         "intended_local_values": [
-          "E",
           "SE",
+          "S",
           "SW",
           "W"
         ],
@@ -159,10 +157,10 @@
         "role_minimum_values": 1,
         "movement_minimum_values": 4,
         "intended_local_values": [
-          "N",
-          "SE",
+          "S",
           "SW",
-          "W"
+          "W",
+          "NW"
         ],
         "compact_values": [
           "carrier"
@@ -191,7 +189,7 @@
         "role_successful_sets": 64,
         "movement_successful_sets": 64,
         "local_update": "start",
-        "active_encounters": 2
+        "active_encounters": 1
       },
       {
         "trial": 2,
@@ -211,7 +209,7 @@
         "role_successful_sets": 32,
         "movement_successful_sets": 32,
         "local_update": "add_one_or_value",
-        "active_encounters": 3
+        "active_encounters": 2
       },
       {
         "trial": 3,
@@ -219,20 +217,19 @@
         "local_family": "role",
         "compact_family": "movement",
         "baseline_reason": "collision",
-        "role_minimum_values": 3,
+        "role_minimum_values": 2,
         "movement_minimum_values": 1,
         "intended_local_values": [
-          "carrier",
           "operator",
           "inspector"
         ],
         "compact_values": [
           "N"
         ],
-        "role_successful_sets": 16,
-        "movement_successful_sets": 16,
-        "local_update": "add_one_or_value",
-        "active_encounters": 4
+        "role_successful_sets": 32,
+        "movement_successful_sets": 32,
+        "local_update": "replace_one_or_value",
+        "active_encounters": 2
       },
       {
         "trial": 4,
@@ -252,7 +249,7 @@
         ],
         "role_successful_sets": 16,
         "movement_successful_sets": 16,
-        "local_update": "replace_one_or_value",
+        "local_update": "add_one_or_value",
         "active_encounters": 3
       },
       {
@@ -261,10 +258,9 @@
         "local_family": "role",
         "compact_family": "movement",
         "baseline_reason": "collision",
-        "role_minimum_values": 4,
+        "role_minimum_values": 3,
         "movement_minimum_values": 1,
         "intended_local_values": [
-          "operator",
           "inspector",
           "loader",
           "technician"
@@ -272,10 +268,10 @@
         "compact_values": [
           "N"
         ],
-        "role_successful_sets": 8,
-        "movement_successful_sets": 8,
-        "local_update": "add_one_or_value",
-        "active_encounters": 4
+        "role_successful_sets": 16,
+        "movement_successful_sets": 16,
+        "local_update": "replace_one_or_value",
+        "active_encounters": 3
       },
       {
         "trial": 6,
@@ -296,7 +292,7 @@
         ],
         "role_successful_sets": 8,
         "movement_successful_sets": 8,
-        "local_update": "replace_one_or_value",
+        "local_update": "add_one_or_value",
         "active_encounters": 4
       },
       {
@@ -330,10 +326,10 @@
         "role_minimum_values": 4,
         "movement_minimum_values": 1,
         "intended_local_values": [
-          "carrier",
           "technician",
           "courier",
-          "scout"
+          "scout",
+          "guard"
         ],
         "compact_values": [
           "N"

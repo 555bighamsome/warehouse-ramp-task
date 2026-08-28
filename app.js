@@ -1394,9 +1394,9 @@ function simpleRuleSentence(sourceRules=rules){
   const values = simpleSelectedValues(sourceRules, family);
   if(!family || !values.length) return "No waiting rule yet.";
   if(family === "role"){
-    return `A robot waits if its role is ${naturalOr(values.map(value => value.label))}.`;
+    return `When robots meet, a robot whose role is ${naturalOr(values.map(value => value.label))} waits.`;
   }
-  return `A robot waits if its movement is ${naturalOr(values.map(value => value.symbol || MOVEMENT_ARROWS[value.id] || value.label))}.`;
+  return `When robots meet, a robot moving ${naturalOr(values.map(value => value.symbol || MOVEMENT_ARROWS[value.id] || value.label))} waits.`;
 }
 
 function simpleCondition(field, value){
@@ -1926,11 +1926,11 @@ function buildRunFeedback(result){
       };
     }
     const coverage = matchedRules.length
-      ? `${matchedRules.join(" and ")} did not make exactly one of them wait.`
-      : `Neither current rule matched ${joinedMoves(ids, frame)}, so neither robot waited.`;
+      ? "Your rule did not leave exactly one robot moving."
+      : "Your rule matched neither robot, so neither waited.";
     return {
-      title:"Both robots tried to enter the same square",
-      observation:`At step ${step}, ${robots} arrived together. ${coverage} Select one of their roles or movement directions so exactly one waits.`,
+      title:"Collision at the shared square",
+      observation:`Step ${step}: ${robots} arrived together. ${coverage}`,
       kind:"bad",
     };
   }
@@ -1961,7 +1961,7 @@ function buildRunFeedback(result){
       : "the other robot";
     return {
       title:"The wrong robot went first",
-      observation:`${blocker} reached the near destination first and blocked ${traveler}'s route to the farther destination. Change the rule so the first robot waits when they meet.`,
+      observation:`${blocker} went first and stopped at the near destination, blocking ${traveler}. Your rule selected the wrong robot to wait.`,
       kind:"bad",
     };
   }
@@ -2003,7 +2003,7 @@ function buildRunFeedback(result){
       : `${waitingRobots || "The robots"} are repeatedly being stopped at the ${target}.`;
     return {
       title:"Both robots are being told to wait",
-      observation:`${cause} Because neither can enter, the task cannot continue. Change the rules so only one waits here.`,
+      observation:`${cause} Neither robot can enter, so the task cannot continue.`,
       kind:"bad",
     };
   }
@@ -2297,7 +2297,14 @@ function startTaskAfterTutorial(){
 
 function initializeTutorial(){
   if(SIMPLE_FAMILY_RULE_LANGUAGE){
-    startTaskAfterTutorial();
+    if(SKIP_TUTORIAL || !window.ResearchTutorial?.startSimple){
+      startTaskAfterTutorial();
+      return;
+    }
+    window.ResearchTutorial.startSimple({
+      log:recordRuleEvent,
+      onComplete:startTaskAfterTutorial,
+    });
     return;
   }
   const screen = $("tutorial-screen");

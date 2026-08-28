@@ -2146,6 +2146,54 @@ body.tutorial-active{overflow:hidden;}
   gap:12px;
   padding:11px 0 0;
 }
+.tut-robot-arrow{
+  position:absolute;
+  right:-8px;
+  bottom:-8px;
+  z-index:4;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:20px;
+  height:20px;
+  box-sizing:border-box;
+  border:1px solid #34383b;
+  background:#fff;
+  color:#202428;
+  font-size:15px;
+  font-weight:800;
+  line-height:1;
+}
+.tut-diagonal-road-link{z-index:0;}
+.tut-simple-rule-demo{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:stretch;
+  gap:12px;
+}
+.tut-simple-rule-choice{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:14px;
+  border:1px solid #cfd4da;
+  background:#fff;
+}
+.tut-simple-rule-choice strong{font-size:13px;line-height:1.45;}
+.tut-simple-family{
+  color:#59616a;
+  font-size:11px;
+  font-weight:750;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+}
+.tut-simple-or{
+  align-self:center;
+  color:#59616a;
+  font-size:11px;
+  font-weight:800;
+}
+.tut-simple-rule-note{margin:0;color:#59616a;font-size:12px;line-height:1.45;}
 
 /* Final narrow-screen layout: map first, rule editor second. */
 @media (max-width:700px){
