@@ -303,7 +303,7 @@ const SIMPLE_PAGES = [
     title:"The first conflict",
     lead:"Both robots are trying to enter the same square at the same time. Press Run to see the collision.",
     points:[
-      "To avoid a collision, your rule must make exactly one robot wait. The other robot moves first, and the waiting robot follows.",
+      "To avoid a collision, choose which robot waits. The other robot moves first, and the waiting robot follows.",
     ],
     scene:SIMPLE_CONFLICT_SCENE,
     controls:true,
@@ -353,11 +353,11 @@ const INSTRUCTION_STEPS = [
   },
   {
     label:"Step 3 · Crossing",
-    title:"Exactly one robot must wait",
+    title:"",
     lead:"Sometimes two robots reach the same square at the same time. Without a waiting rule, they cannot both continue.",
     points:[
-      "At every crossing, exactly one of the two robots should wait.",
-      "The other robot passes first, then the waiting robot continues.",
+      "If two robots try to enter the same square, choose which one should wait.",
+      "The other robot moves first. The waiting robot continues after it has passed.",
       "Your rule applies every time two robots meet on the map.",
     ],
     visual:() => `
@@ -1152,7 +1152,9 @@ function renderInstructionStep(index){
   instructionStep = Math.max(0, Math.min(index, INSTRUCTION_STEPS.length - 1));
   const step = INSTRUCTION_STEPS[instructionStep];
   el("instruction-step-label").textContent = step.label;
-  el("instruction-step-title").textContent = step.title;
+  const instructionTitle = el("instruction-step-title");
+  instructionTitle.textContent = step.title;
+  instructionTitle.hidden = !step.title;
   el("instruction-step-lead").textContent = step.lead;
   el("instruction-step-points").innerHTML = step.points.map(point => `<li>${point}</li>`).join("");
   el("instruction-visual").innerHTML = step.visual();

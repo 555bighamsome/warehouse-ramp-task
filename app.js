@@ -687,7 +687,7 @@ function buildTabs(){
 function renderSceneGoal(){
   const list = $("scene-goal-list");
   if(!list) return;
-  list.innerHTML = '<div class="goal-instruction">Let every robot reach its assigned charging bay. Whenever two routes meet, exactly one robot must wait.</div>';
+  list.innerHTML = '<div class="goal-instruction">Let every robot reach its assigned charging bay. Whenever two routes meet, use your rule to choose which robot waits.</div>';
 }
 
 function buildBoard(){
@@ -1982,16 +1982,16 @@ function buildRunFeedback(result){
     const matchedRules = uniqueRuleLabels(matches, ids);
     if(square === "exit"){
       const coverage = matchedRules.length
-        ? `${matchedRules.join(" and ")} did not leave exactly one robot free to enter.`
+        ? `${matchedRules.join(" and ")} did not leave one robot free to enter first.`
         : `None of your current rules covered ${joinedMoves(ids, frame)}, so neither robot waited.`;
       return {
         title:"This exit has an entry order",
-        observation:`At step ${step}, ${robots} tried to enter the exit together. ${coverage} Change the rules so exactly one robot waits here.`,
+        observation:`At step ${step}, ${robots} tried to enter the exit together. ${coverage} Change the rule so one robot waits while the other enters first.`,
         kind:"bad",
       };
     }
     const coverage = matchedRules.length
-      ? "Your rule did not leave exactly one robot moving."
+      ? "Your rule did not let one robot move first."
       : "Your rule matched neither robot, so neither waited.";
     return {
       title:"Collision at the shared square",
