@@ -41,6 +41,14 @@ let finish = () => {};
 let tutorialMode = "standard";
 let instructionStep = 0;
 let instructionReviewMode = false;
+let comprehensionAttempt = 0;
+
+const COMPREHENSION_ANSWERS = {
+  check1:"b",
+  check2:"c",
+  check3:"a",
+  check4:"d",
+};
 
 const state = {
   page:0,
@@ -1132,7 +1140,7 @@ function recordPageVisit(){
 }
 
 function hideOnboardingScreens(){
-  ["ethics-screen", "instructions-screen", "tutorial-screen"].forEach(id => {
+  ["ethics-screen", "instructions-screen", "tutorial-screen", "comprehension-screen"].forEach(id => {
     const screen = el(id);
     if(screen) screen.hidden = true;
   });
@@ -1269,7 +1277,7 @@ function renderPage(index){
   el("tut-progress-label").textContent = `${state.page + 1} of ${PAGES.length}`;
   el("tut-progress-bar").style.width = `${((state.page + 1) / PAGES.length) * 100}%`;
   el("tut-back").disabled = state.page === 0;
-  el("tut-continue").textContent = state.page === PAGES.length - 1 ? "Start task" : "Next";
+  el("tut-continue").textContent = state.page === PAGES.length - 1 ? "Continue" : "Next";
   updateContinueState();
   el("tut-dots").innerHTML = PAGES.map((row, pageIndex) => {
     const className = pageIndex === state.page ? "is-active" : pageIndex < state.page ? "is-complete" : "";
@@ -1303,13 +1311,91 @@ function completeTutorial(){
       carryover_observed:state.simpleCarryObserved,
       carryover_rule_solved:state.simplePracticeTwoSolved,
     },
+    comprehension_attempts:[],
   };
   emit("tutorial_completed", {
     duration_ms:window.tutorialReport.duration_ms,
     run_count:state.runs.length,
   });
+  showComprehension();
+}
+
+function comprehensionResponses(){
+  const responses = {};
+  Object.keys(COMPREHENSION_ANSWERS).forEach(name => {
+    responses[name] = document.querySelector(`input[name="${name}"]:checked`)?.value || null;
+  });
+  return responses;
+}
+
+function updateComprehensionState(){
+  const responses = comprehensionResponses();
+  const answered = Object.values(responses).filter(Boolean).length;
+  el("comprehension-check").disabled = answered !== Object.keys(COMPREHENSION_ANSWERS).length;
+  el("comprehension-status").textContent = answered === Object.keys(COMPREHENSION_ANSWERS).length
+    ? "All four questions answered."
+    : `Answer all four questions. ${answered} of 4 answered.`;
+}
+
+function resetComprehension(){
+  el("comprehension-form").reset();
+  el("comprehension-form").hidden = false;
+  el("comprehension-result").hidden = true;
+  el("comprehension-check").hidden = false;
+  el("comprehension-retry").hidden = true;
+  el("comprehension-start").hidden = true;
+  updateComprehensionState();
+  el("comprehension-form").querySelector("input")?.focus();
+}
+
+function showComprehension(){
+  hideOnboardingScreens();
+  setOnboardingActive(true);
+  const screen = el("comprehension-screen");
+  if(!screen){
+    setOnboardingActive(false);
+    finish();
+    return;
+  }
+  resetComprehension();
+  screen.hidden = false;
+  emit("comprehension_opened", {question_count:Object.keys(COMPREHENSION_ANSWERS).length});
+  window.scrollTo(0, 0);
+}
+
+function checkComprehension(){
+  const responses = comprehensionResponses();
+  if(Object.values(responses).some(value => !value)) return;
+  comprehensionAttempt += 1;
+  const passed = Object.entries(COMPREHENSION_ANSWERS)
+    .every(([name, answer]) => responses[name] === answer);
+  const record = {
+    attempt:comprehensionAttempt,
+    passed,
+    responses,
+    timestamp:Date.now(),
+  };
+  window.tutorialReport?.comprehension_attempts.push(record);
+  emit("comprehension_submitted", record);
+
+  el("comprehension-form").hidden = true;
+  el("comprehension-result").hidden = false;
+  el("comprehension-check").hidden = true;
+  el("comprehension-status").textContent = "";
+  el("comprehension-result-title").textContent = passed ? "You are ready" : "Please try again";
+  el("comprehension-result-copy").textContent = passed
+    ? "All four answers are correct."
+    : "Some answers were not correct. Please answer all four questions again.";
+  el("comprehension-start").hidden = !passed;
+  el("comprehension-retry").hidden = passed;
+  (passed ? el("comprehension-start") : el("comprehension-retry")).focus();
+}
+
+function startTaskAfterComprehension(){
   hideOnboardingScreens();
   setOnboardingActive(false);
+  window.scrollTo(0, 0);
+  emit("comprehension_passed", {attempts:comprehensionAttempt});
   finish();
 }
 
@@ -1343,6 +1429,10 @@ function bind(){
     if(instructionReviewMode) closeInstructionReview();
     else beginInteractiveTutorial();
   };
+  el("comprehension-form").onchange = updateComprehensionState;
+  el("comprehension-check").onclick = checkComprehension;
+  el("comprehension-retry").onclick = resetComprehension;
+  el("comprehension-start").onclick = startTaskAfterComprehension;
 }
 
 function startTutorial(options={}, mode="standard"){
@@ -1371,6 +1461,7 @@ function startTutorial(options={}, mode="standard"){
     state.simplePracticeOneSolved = false;
     state.simpleCarryObserved = false;
     state.simplePracticeTwoSolved = false;
+    comprehensionAttempt = 0;
     bind();
     emit("tutorial_started", {page_count:PAGES.length, tutorial_mode:tutorialMode});
     if(mode === "simple") showEthicsScreen();

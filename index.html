@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Coordination Rules</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="styles.css?v=role-movement-v40">
+<link rel="stylesheet" href="styles.css?v=role-movement-v41">
 </head>
 <body>
 <div class="onboarding-screen" id="ethics-screen" hidden>
@@ -183,6 +183,66 @@
   </main>
 </div>
 
+<div class="onboarding-screen" id="comprehension-screen" hidden>
+  <main class="onboarding-shell comprehension-shell" aria-labelledby="comprehension-title">
+    <header class="onboarding-header">
+      <div>
+        <div class="onboarding-kicker">Before the task</div>
+        <h1 id="comprehension-title">Check your understanding</h1>
+      </div>
+      <div class="comprehension-count">4 questions</div>
+    </header>
+
+    <form class="comprehension-form" id="comprehension-form">
+      <fieldset class="comprehension-question">
+        <legend>1. What completes a task?</legend>
+        <label class="comprehension-option"><input type="radio" name="check1" value="a"><span>One robot reaches any charging bay.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check1" value="b"><span>Every robot reaches the charging bay with the same number.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check1" value="c"><span>You press Run once.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check1" value="d"><span>Every robot waits at least once.</span></label>
+      </fieldset>
+
+      <fieldset class="comprehension-question">
+        <legend>2. Two robots try to enter the same square at the same time. What should the waiting rule do?</legend>
+        <label class="comprehension-option"><input type="radio" name="check2" value="a"><span>Stop both robots permanently.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check2" value="b"><span>Let both robots enter the square together.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check2" value="c"><span>Make one robot wait while the other robot moves first.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check2" value="d"><span>Change the robots' destination numbers.</span></label>
+      </fieldset>
+
+      <fieldset class="comprehension-question">
+        <legend>3. What information can the waiting rule use?</legend>
+        <label class="comprehension-option"><input type="radio" name="check3" value="a"><span>Robot type or current movement direction.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check3" value="b"><span>Destination number only.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check3" value="c"><span>Distance to the charging bay only.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check3" value="d"><span>The order in which robots appear on the map.</span></label>
+      </fieldset>
+
+      <fieldset class="comprehension-question">
+        <legend>4. What happens to your waiting rule when the next task starts?</legend>
+        <label class="comprehension-option"><input type="radio" name="check4" value="a"><span>It is deleted.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check4" value="b"><span>It is changed at random.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check4" value="c"><span>It can no longer be edited.</span></label>
+        <label class="comprehension-option"><input type="radio" name="check4" value="d"><span>It stays selected and is used on the new map.</span></label>
+      </fieldset>
+    </form>
+
+    <section class="comprehension-result" id="comprehension-result" hidden aria-live="polite">
+      <h2 id="comprehension-result-title"></h2>
+      <p id="comprehension-result-copy"></p>
+    </section>
+
+    <footer class="onboarding-footer comprehension-footer">
+      <span class="comprehension-status" id="comprehension-status">Answer all four questions.</span>
+      <div class="comprehension-actions">
+        <button class="tutorial-nav-button primary" id="comprehension-check" type="button" disabled>Check answers</button>
+        <button class="tutorial-nav-button secondary" id="comprehension-retry" type="button" hidden>Try again</button>
+        <button class="tutorial-nav-button primary" id="comprehension-start" type="button" hidden>Start task</button>
+      </div>
+    </footer>
+  </main>
+</div>
+
 <div class="wrap">
   <div class="taskbar">
     <div class="taskbar-head">
@@ -275,9 +335,9 @@
   </section>
 </div>
 
-<script src="data/tasks.generated.js?v=role-movement-v40"></script>
-<script src="engine.js?v=role-movement-v40"></script>
-<script src="tutorial.js?v=role-movement-v40"></script>
-<script src="app.js?v=role-movement-v40"></script>
+<script src="data/tasks.generated.js?v=role-movement-v41"></script>
+<script src="engine.js?v=role-movement-v41"></script>
+<script src="tutorial.js?v=role-movement-v41"></script>
+<script src="app.js?v=role-movement-v41"></script>
 </body>
 </html>
