@@ -9,6 +9,7 @@ let library = [];
 let robotEls = {};
 let machineEls = {};
 let timer = null;
+let autoAdvanceTimer = null;
 let runs = [];
 let lastResult = null;
 let lastFrames = [];
@@ -576,6 +577,7 @@ function showScenePicker(){
 
 function switchTask(index){
   if(!taskUnlocked(TASKS[index])) return;
+  if(autoAdvanceTimer){ clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
   const sourceIndex = curIndex;
   const sourceTask = scn;
   const targetWasVisited = shiftStates[TASKS[index].id].visited;
@@ -1459,6 +1461,7 @@ function resetRunAfterRuleEdit(){
     clearInterval(timer);
     timer = null;
   }
+  if(autoAdvanceTimer){ clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
   lastResult = null;
   lastFrames = [];
   frameIndex = 0;
@@ -2098,22 +2101,34 @@ function setRunFeedback(result){
   observation.textContent = feedback.observation;
   status.append(title, observation);
   updateContinueButton();
+  scheduleAutoAdvance(result);
   return feedback;
 }
 
 function updateContinueButton(){
-  const button = $("continue");
-  if(!button) return;
-  const nextTask = TASKS[curIndex + 1];
-  const canContinue = !!lastResult?.ok && !!nextTask && taskUnlocked(nextTask);
-  button.hidden = !canContinue;
-  if(canContinue) button.textContent = `Next: ${nextTask.label} \u2192`;
   const runButton = $("run");
   if(runButton){
     runButton.textContent = lastResult?.ok ? "Run again" : "Run rule";
     runButton.classList.toggle("primary", !lastResult?.ok);
     runButton.classList.toggle("secondary-run", !!lastResult?.ok);
   }
+}
+
+function scheduleAutoAdvance(result){
+  if(autoAdvanceTimer){ clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+  const completedIndex = curIndex;
+  const nextTask = TASKS[completedIndex + 1];
+  if(!result?.ok || !nextTask || !taskUnlocked(nextTask)) return;
+  recordRuleEvent("task_auto_advance_scheduled", {
+    source_shift_id:scn.id,
+    target_shift_id:nextTask.id,
+    delay_ms:1000,
+  });
+  autoAdvanceTimer = setTimeout(() => {
+    autoAdvanceTimer = null;
+    if(curIndex !== completedIndex || !shiftStates[scn.id].lastOk) return;
+    switchTask(completedIndex + 1);
+  }, 1000);
 }
 
 function closeNotice(){
@@ -2200,8 +2215,7 @@ function libraryNorms(){
 
 function play(trigger="manual"){
   if(timer){ clearInterval(timer); timer = null; }
-  const continueButton = $("continue");
-  if(continueButton) continueButton.hidden = true;
+  if(autoAdvanceTimer){ clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
   const runButton = $("run");
   if(runButton){
     runButton.textContent = "Run rule";
@@ -2302,6 +2316,7 @@ function play(trigger="manual"){
 
 function resetBoard(){
   if(timer){ clearInterval(timer); timer = null; }
+  if(autoAdvanceTimer){ clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
   lastResult = null;
   lastFrames = [];
   frameIndex = 0;
@@ -2399,9 +2414,6 @@ if(!TASKS.length){
   const researcherPanel = $("researcher-panel");
   if(researcherPanel) researcherPanel.hidden = !DEBUG_UI;
   $("run").onclick = () => play("manual");
-  $("continue").onclick = () => {
-    if(curIndex < TASKS.length - 1) switchTask(curIndex + 1);
-  };
   $("prev").onclick = () => showFrameAt(frameIndex - 1);
   $("next").onclick = () => showFrameAt(frameIndex + 1);
   $("guide-close").onclick = closeSceneGuide;
