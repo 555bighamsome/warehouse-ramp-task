@@ -10,10 +10,37 @@
 
 const CELL = 42;
 const STEP_MS = 420;
+const SIMPLE_TYPE_COLOR = "#2D70B3";
+const SIMPLE_TYPE_LETTERS = {
+  carrier:"A",
+  operator:"B",
+  inspector:"C",
+  loader:"D",
+  technician:"E",
+  courier:"F",
+  scout:"G",
+  guard:"H",
+};
+
+function simpleTypeLetter(role){
+  return SIMPLE_TYPE_LETTERS[role] || "?";
+}
+
+function simpleTypeLabel(role){
+  return `Type ${simpleTypeLetter(role)}`;
+}
+
+function tutorialTargetNumber(agent, scene){
+  const activeAgents = scene?.agents?.filter(candidate => candidate.active) || [];
+  const index = activeAgents.findIndex(candidate => String(candidate.id) === String(agent.id));
+  return index >= 0 ? String(index + 1) : String(Number(agent.id) + 1);
+}
 
 let emit = () => {};
 let finish = () => {};
 let tutorialMode = "standard";
+let instructionStep = 0;
+let instructionReviewMode = false;
 
 const state = {
   page:0,
@@ -30,6 +57,13 @@ const state = {
   practiceSaved:false,
   practiceUsed:false,
   reuseSolved:false,
+  simpleCollisionObserved:false,
+  simpleFamily:null,
+  simpleValues:[],
+  simpleFamiliesSolved:[],
+  simplePracticeOneSolved:false,
+  simpleCarryObserved:false,
+  simplePracticeTwoSolved:false,
 };
 
 function agentDisplayId(id){
@@ -86,11 +120,12 @@ function carrier(id, start, target){
   };
 }
 
-function tutorialRobot(id, start, target, role){
+function tutorialRobot(id, start, target, role, movementArrow){
   return {
     id,
     start,
     role,
+    movement_arrow:movementArrow,
     carrying:"none",
     active:true,
     tokens:[],
@@ -147,13 +182,38 @@ const SIMPLE_CONFLICT_SCENE = makeScene(
   "tutorial_shared_square",
   wallsOutside(SIMPLE_CONFLICT_OPEN),
   [
-    tutorialRobot(0, [2,1], [1,4], "operator"),
-    tutorialRobot(1, [4,3], [0,5], "scout"),
+    tutorialRobot(0, [2,1], [1,4], "carrier", "E"),
+    tutorialRobot(1, [4,3], [0,5], "operator", "N"),
   ],
   {
     diagonalEdges:[
       [[2,3], [1,4]],
       [[1,4], [0,5]],
+    ],
+  },
+);
+
+const SIMPLE_CARRY_OPEN = [
+  [2,0], [2,1], [2,2], [1,2], [0,2], [1,3], [0,4], [3,2], [4,2],
+  [2,10], [2,9], [2,8], [1,8], [0,8], [3,8], [4,8], [3,7], [4,6],
+];
+const SIMPLE_CARRY_SCENE = makeScene(
+  "tutorial_rule_carryover",
+  wallsOutside(SIMPLE_CARRY_OPEN, 5, 11),
+  [
+    tutorialRobot(0, [2,0], [0,4], "carrier", "E"),
+    tutorialRobot(1, [4,2], [0,2], "operator", "N"),
+    tutorialRobot(2, [2,10], [4,6], "inspector", "W"),
+    tutorialRobot(3, [0,8], [4,8], "loader", "S"),
+  ],
+  {
+    rows:5,
+    cols:11,
+    diagonalEdges:[
+      [[2,2], [1,3]],
+      [[1,3], [0,4]],
+      [[2,8], [3,7]],
+      [[3,7], [4,6]],
     ],
   },
 );
@@ -195,7 +255,7 @@ const ALL_PAGES = [
     points:[
       "All active robots act during the same time step.",
       "If multiple robots try to enter the same square in the same step, they collide.",
-      "The scene is solved only when every active robot completes its target.",
+      "The task is complete only when every active robot reaches its target.",
       "After a run, use the arrows to inspect the robots' positions at each time step.",
     ],
     scene:COLLISION_SCENE,
@@ -205,11 +265,11 @@ const ALL_PAGES = [
   {
     id:"rules",
     title:"Build, test, and refine a rule",
-    lead:"Entering the marked square causes this practice scene to fail. Build a rule that prevents the robot from entering it.",
+    lead:"Entering the marked square causes this practice task to fail. Build a rule that prevents the robot from entering it.",
     points:[
       "Choose an object and a fact; then select Add condition.",
       "Conditions within one rule are joined by AND, so all of them must be true.",
-      "Every active rule applies to every robot in the scene.",
+      "Every active rule applies to every robot in the task.",
     ],
     scene:RULE_PRACTICE_SCENE,
     controls:true,
@@ -220,15 +280,15 @@ const ALL_PAGES = [
   {
     id:"library",
     title:"Save and reuse a rule",
-    lead:"The library is optional. Use it when you want to carry a rule into another scene.",
+    lead:"The library is optional. Use it when you want to carry a rule into another task.",
     points:[
       "Save to library keeps a copy available throughout the rest of the task.",
-      "A saved rule is not active in a new scene automatically.",
-      "To reuse it, select Add to rulebook. You can then run the scene to test it.",
+      "A saved rule is not active in a new task automatically.",
+      "To reuse it, select Add to rulebook. You can then run the task to test it.",
     ],
     scene:RULE_REUSE_SCENE,
     controls:true,
-    initialNote:"This is a new scene. No rules are active yet.",
+    initialNote:"This is a new task. No rules are active yet.",
     reference:"library",
   },
 ];
@@ -240,30 +300,92 @@ const DEFAULT_PAGES = ALL_PAGES.filter(page => page.id !== "library");
 const SIMPLE_PAGES = [
   {
     id:"simple_encounter",
-    title:"Watch one encounter",
-    lead:"Robots follow their routes at the same time. Press Run and watch the square where their routes meet.",
+    title:"The first conflict",
+    lead:"Both robots are trying to enter the same square at the same time. Press Run to see the collision.",
     points:[
-      "Each robot must reach the destination with the same letter.",
-      "If two robots enter the same square together, they collide.",
-      "The arrow above a robot shows its movement on that step, so it can change along the route.",
+      "To avoid a collision, your rule must make exactly one robot wait. The other robot moves first, and the waiting robot follows.",
     ],
     scene:SIMPLE_CONFLICT_SCENE,
     controls:true,
-    initialNote:"Press Run to watch the two routes meet.",
+    initialNote:"No waiting rule is active.",
+    requires:"collision_observed",
   },
   {
-    id:"simple_rule",
-    title:"Choose one way to identify who waits",
-    lead:"One shared rule applies whenever two robots meet. Exactly one of the two robots should match it.",
-    points:[
-      "First choose either Movement direction or Robot role.",
-      "Then choose one or more values. Multiple values are joined by OR automatically.",
-      "The rule carries into the next trial, where you can keep it or edit it.",
-    ],
+    id:"simple_practice_one",
+    title:"Choose who waits",
+    lead:"Make one rule using Movement direction, then another using Robot type. Both should let the robots pass safely.",
+    points:[],
     scene:SIMPLE_CONFLICT_SCENE,
-    controls:false,
-    initialNote:"The two example rules below identify the same robot.",
-    reference:"simple_rule",
+    controls:true,
+    reference:"simple_builder",
+    requires:"simple_practice_one",
+  },
+];
+
+const INSTRUCTION_STEPS = [
+  {
+    label:"Step 1 · Goal",
+    title:"Guide every robot to its charging bay",
+    lead:"The robots follow their routes automatically. You decide how they coordinate when their routes cross.",
+    points:[
+      "The number on a robot matches the number on its charging bay.",
+      "You do not steer the robots. Press Run to test the waiting rule you have written.",
+      "You complete the task when every robot reaches its own charging bay.",
+    ],
+    visual:() => `
+      <figure class="instruction-screenshot">
+        <img src="assets/instructions/map-overview.png?v=32" alt="A tutorial practice map showing two robots, their routes, and numbered charging bays.">
+      </figure>`,
+  },
+  {
+    label:"Step 2 · Robot information",
+    title:"Each robot shows two different features",
+    lead:"The letter and arrow describe different things. Both are always visible on the robot.",
+    points:[
+      "Robot type is the letter badge. It stays with that robot throughout the task.",
+      "Movement direction is the arrow badge. It shows the direction the robot is currently moving and can change as the route turns.",
+      "The number is only used to match the robot to its charging bay.",
+    ],
+    visual:() => `
+      <figure class="instruction-screenshot is-robot-detail">
+        <img src="assets/instructions/robot-badges.png?v=32" alt="A tutorial robot with destination number 1, type A, and a rightward movement arrow.">
+      </figure>`,
+  },
+  {
+    label:"Step 3 · Crossing",
+    title:"Exactly one robot must wait",
+    lead:"Sometimes two robots reach the same square at the same time. Without a waiting rule, they cannot both continue.",
+    points:[
+      "At every crossing, exactly one of the two robots should wait.",
+      "The other robot passes first, then the waiting robot continues.",
+      "Your rule applies every time two robots meet on the map.",
+    ],
+    visual:() => `
+      <figure class="instruction-screenshot-pair">
+        <div>
+          <strong>No waiting rule</strong>
+          <img src="assets/instructions/approaching-crossing.png?v=32" alt="Two tutorial robots about to enter the same square without a waiting rule.">
+        </div>
+        <div>
+          <strong>One robot waits</strong>
+          <img src="assets/instructions/wait-at-crossing.png?v=32" alt="One tutorial robot waiting while the other enters the crossing.">
+        </div>
+      </figure>`,
+  },
+  {
+    label:"Step 4 · Waiting rule",
+    title:"Write one rule and test it",
+    lead:"Choose which feature the rule uses, then choose the values that identify the robot that should wait.",
+    points:[
+      "Choose either Movement direction or Robot type.",
+      "You can choose one or more arrows or types. A robot waits if it has any one of your choices.",
+      "Run the rule, inspect what happened, and change it if needed.",
+      "Your rule stays on screen in the next task. You can keep it or change it.",
+    ],
+    visual:() => `
+      <figure class="instruction-screenshot is-editor">
+        <img src="assets/instructions/rule-editor.png?v=32" alt="The tutorial rule editor with Movement direction selected and east chosen.">
+      </figure>`,
   },
 ];
 
@@ -320,15 +442,21 @@ function drawBoard(host, scene, frame=null){
 
   scene.agents.forEach(agent => {
     const target = goalCell(scene, agent);
+    const agentColour = tutorialMode === "simple" ? SIMPLE_TYPE_COLOR : COL[agent.id % COL.length];
     const ring = document.createElement("div");
     ring.className = "ring";
     ring.style.left = `${target[1] * CELL}px`;
     ring.style.top = `${target[0] * CELL}px`;
     ring.style.width = `${CELL - 4}px`;
     ring.style.height = `${CELL - 4}px`;
-    ring.style.borderColor = COL[agent.id % COL.length];
-    ring.style.setProperty("--agent-color", COL[agent.id % COL.length]);
-    ring.innerHTML = `<span class="target-label target-label-corner-0">${agentDisplayId(agent.id)}</span>`;
+    ring.style.borderColor = agentColour;
+    ring.style.setProperty("--agent-color", agentColour);
+    ring.setAttribute("aria-label", tutorialMode === "simple"
+      ? `Charging bay ${tutorialTargetNumber(agent, scene)} for Robot ${tutorialTargetNumber(agent, scene)}, ${simpleTypeLabel(agent.role)}`
+      : `Target for Robot ${agentDisplayId(agent.id)}`);
+    ring.innerHTML = tutorialMode === "simple"
+      ? `<span class="target-label target-label-corner-0">${tutorialTargetNumber(agent, scene)}</span>`
+      : `<span class="target-label target-label-corner-0">${agentDisplayId(agent.id)}</span>`;
     host.appendChild(ring);
   });
 
@@ -339,16 +467,22 @@ function drawBoard(host, scene, frame=null){
     robot.className = "robot";
     robot.classList.toggle("done", !!meta.done);
     robot.classList.toggle("failed", !!meta.failed);
+    robot.classList.toggle("waiting", !!meta.waiting);
     robot.style.left = `${position[1] * CELL + 7}px`;
     robot.style.top = `${position[0] * CELL + 7}px`;
     robot.style.width = `${CELL - 14}px`;
     robot.style.height = `${CELL - 14}px`;
-    robot.style.background = COL[agent.id % COL.length];
-    const direction = meta.intent?.dir || agent.movementArrow;
+    robot.style.background = tutorialMode === "simple" ? SIMPLE_TYPE_COLOR : COL[agent.id % COL.length];
+    robot.title = tutorialMode === "simple"
+      ? `Robot ${tutorialTargetNumber(agent, scene)}, ${simpleTypeLabel(agent.role)}`
+      : `Robot ${agentDisplayId(agent.id)}`;
+    const direction = meta.display_dir || meta.intent?.dir || agent.movementArrow;
     const arrows = {N:"↑", NE:"↗", E:"→", SE:"↘", S:"↓", SW:"↙", W:"←", NW:"↖"};
-    robot.innerHTML = icon(tutorialMode === "simple" ? "robot" : (agent.role || "robot"), "robot-role") +
-      `<span class="robot-id">${agentDisplayId(agent.id)}</span>` +
+    robot.innerHTML = (tutorialMode === "simple"
+      ? icon("robot", "robot-role") + `<span class="robot-id">${tutorialTargetNumber(agent, scene)}</span>` + `<span class="robot-type-letter robot-type-mark" aria-hidden="true">${simpleTypeLetter(agent.role)}</span>`
+      : icon(agent.role || "robot", "robot-role") + `<span class="robot-id">${agentDisplayId(agent.id)}</span>`) +
       (direction ? `<span class="tut-robot-arrow" aria-label="Moving ${direction}">${arrows[direction] || direction}</span>` : "") +
+      (meta.waiting ? icon("waiting", "robot-state-mark") : "") +
       (meta.failed ? icon("failed", "robot-state-mark") : "") +
       (meta.done ? icon("done", "robot-state-mark") : "");
     host.appendChild(robot);
@@ -416,12 +550,26 @@ function feedbackEntry(result){
     return {
       kind:"ok",
       title:"That worked!",
-      text:`Every robot reached its destination in ${steps} steps.`,
+      text:tutorialMode === "simple"
+        ? `Every robot reached its assigned charging bay in ${steps} steps.`
+        : `Every robot reached its destination in ${steps} steps.`,
+    };
+  }
+  if(result.reason === "timeout" && tutorialMode === "simple"){
+    return {
+      kind:"bad",
+      title:"Both robots are being told to wait",
+      text:"At one encounter, both robots match the rule. Change the selected values so exactly one of them waits.",
     };
   }
   if(result.reason === "collision"){
     const event = result.frames[result.frames.length - 1]?.event;
-    const names = (event?.agents || []).map(id => `Robot ${agentDisplayId(id)}`).join(" and ");
+    const scene = PAGES[state.page]?.scene;
+    const names = (event?.agents || []).map(id => {
+      if(tutorialMode !== "simple") return `Robot ${agentDisplayId(id)}`;
+      const agent = scene?.agents.find(row => String(row.id) === String(id));
+      return `Robot ${tutorialTargetNumber(agent, scene)} (${simpleTypeLabel(agent?.role)})`;
+    }).join(" and ");
     return {
       kind:"bad",
       title:"They met at the same time",
@@ -464,6 +612,7 @@ function showFrame(index, inspected=false){
     setFeedback(feedbackEntry(state.result));
     if(page.id === "rules") renderReference("rule");
     if(page.id === "library") renderReference("library");
+    if(page.reference === "simple_builder") renderReference("simple_builder");
   }
   if(inspected){
     emit("tutorial_step_inspected", {
@@ -477,11 +626,12 @@ function runCurrentScene(){
   const page = PAGES[state.page];
   if(!page.scene) return;
   stopAnimation();
+  const isSimplePractice = page.id === "simple_practice_one" || page.id === "simple_practice_two";
   state.result = page.id === "rules"
     ? rulePracticeResult()
     : page.id === "library"
       ? ruleReuseResult()
-      : simulate(page.scene, []);
+      : simulate(page.scene, isSimplePractice ? simpleTutorialRules() : []);
   state.frames = state.result.frames || [];
   state.frameIndex = 0;
   if(page.id === "rules"){
@@ -490,6 +640,22 @@ function runCurrentScene(){
   }
   if(page.id === "library"){
     state.reuseSolved = state.result.ok;
+    updateContinueState();
+  }
+  if(page.id === "simple_encounter"){
+    state.simpleCollisionObserved = state.result.reason === "collision";
+    updateContinueState();
+  }
+  if(page.id === "simple_practice_one"){
+    state.simplePracticeOneSolved = state.result.ok;
+    if(state.result.ok && state.simpleFamily && !state.simpleFamiliesSolved.includes(state.simpleFamily)){
+      state.simpleFamiliesSolved.push(state.simpleFamily);
+    }
+    updateContinueState();
+  }
+  if(page.id === "simple_practice_two"){
+    state.simpleCarryObserved = true;
+    state.simplePracticeTwoSolved = state.result.ok;
     updateContinueState();
   }
   state.runs.push({
@@ -524,7 +690,8 @@ function resetCurrentScene(){
   el("tut-step-label").textContent = "Step 0 / 0";
   el("tut-prev").disabled = true;
   el("tut-next-step").disabled = true;
-  setFeedback(null, page.initialNote || "");
+  const note = page.reference === "simple_builder" ? "" : page.initialNote || "";
+  setFeedback(null, note);
 }
 
 function mapReferenceMarkup(){
@@ -550,21 +717,196 @@ function mapReferenceMarkup(){
   `;
 }
 
-function simpleRuleReferenceMarkup(){
+function simpleTutorialFields(){
+  if(typeof EXPORTED_RULE_SCHEMA === "undefined") return [];
+  return (EXPORTED_RULE_SCHEMA.fields || []).filter(field =>
+    field.predicate === "move_dir" || field.predicate === "role"
+  );
+}
+
+function simpleTutorialField(predicate=state.simpleFamily){
+  return simpleTutorialFields().find(field => field.predicate === predicate) || null;
+}
+
+function simpleTutorialSelectedValues(){
+  const field = simpleTutorialField();
+  if(!field) return [];
+  const selected = new Set(state.simpleValues.map(String));
+  return field.values.filter(value => selected.has(String(value.id)));
+}
+
+function simpleTutorialVisibleValues(field){
+  const scene = PAGES[state.page]?.scene;
+  if(!field || !scene) return field?.values || [];
+  const present = new Set(scene.agents.map(agent =>
+    field.predicate === "role" ? agent.role : agent.movementArrow
+  ));
+  return field.values.filter(value => present.has(value.id));
+}
+
+function simpleTutorialRuleSentence(){
+  const values = simpleTutorialSelectedValues();
+  if(!state.simpleFamily || !values.length) return "No waiting rule yet.";
+  if(state.simpleFamily === "role"){
+    const types = naturalTutorialList(values.map(value => value.label));
+    return values.length === 1
+      ? `When two robots meet, the ${types} robot waits.`
+      : `When two robots meet, robots of ${types} wait.`;
+  }
+  const directions = naturalTutorialList(values.map(value => value.symbol || value.id));
+  return values.length === 1
+    ? `When two robots meet, the robot moving ${directions} waits.`
+    : `When two robots meet, robots moving ${directions} wait.`;
+}
+
+function naturalTutorialList(items){
+  if(items.length < 2) return items[0] || "";
+  if(items.length === 2) return `${items[0]} or ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, or ${items[items.length - 1]}`;
+}
+
+function simpleTutorialRules(){
+  const field = simpleTutorialField();
+  if(!field) return [];
+  return simpleTutorialSelectedValues().map((value, index) => ({
+    id:9000 + index,
+    action:"MOVE",
+    conds:[{
+      object:field.object,
+      property:field.id,
+      p:field.predicate,
+      v:value.id,
+      negated:false,
+    }],
+    editor:null,
+  }));
+}
+
+function simpleBuilderHelp(page){
+  if(page.id === "simple_practice_two" && !state.simpleCarryObserved){
+    return "Run the carried rule first.";
+  }
+  if(page.id === "simple_practice_two" && state.simpleCarryObserved && !state.simplePracticeTwoSolved){
+    return "Update the selected values, then run again.";
+  }
+  if(page.id === "simple_practice_one" && !state.simpleFamily){
+    return "Choose Movement direction or Robot type.";
+  }
+  if(!state.simpleValues.length) return "Select at least one value.";
+  if(page.id === "simple_practice_one" && state.simpleFamiliesSolved.length === 1){
+    const remaining = state.simpleFamiliesSolved[0] === "role" ? "Movement direction" : "Robot type";
+    return `That works. Now switch to ${remaining} and solve it again.`;
+  }
+  if(page.id === "simple_practice_one" && state.simpleFamiliesSolved.length === 2){
+    return "Both rule forms work. Continue.";
+  }
+  if(page.id === "simple_practice_two" && state.simplePracticeTwoSolved){
+    return "This shared rule handles both crossings.";
+  }
+  return "Run the rule.";
+}
+
+function simpleRuleBuilderMarkup(){
+  const page = PAGES[state.page];
+  const fields = simpleTutorialFields();
+  const field = simpleTutorialField();
+  const selected = new Set(state.simpleValues.map(String));
+  const locked = page.id === "simple_practice_two" && !state.simpleCarryObserved;
   return `
-    <div class="tut-simple-rule-demo" aria-label="Two equivalent example rules">
-      <div class="tut-simple-rule-choice">
-        <span class="tut-simple-family">Movement direction</span>
-        <strong>When robots meet, the robot moving → waits.</strong>
-      </div>
-      <span class="tut-simple-or">OR</span>
-      <div class="tut-simple-rule-choice">
-        <span class="tut-simple-family">Robot role</span>
-        <strong>When robots meet, the Operator waits.</strong>
-      </div>
+    <div class="tut-simple-builder${locked ? " is-locked" : ""}" aria-label="Practice rule editor">
+      <div class="simple-rule-context">WHEN TWO ROBOTS MEET</div>
+      <section class="simple-rule-step">
+        <div class="simple-step-heading"><span>1</span><strong>Choose what the rule uses</strong></div>
+        <div class="simple-family-buttons">
+          ${fields.map(option => {
+            const isSelected = state.simpleFamily === option.predicate;
+            const content = option.predicate === "role"
+              ? `${icon("robot", "family-button-icon")}<span>Robot type</span>`
+              : '<span class="family-arrow-icon" aria-hidden="true">↗</span><span>Movement direction</span>';
+            return `<button class="simple-family-button${isSelected ? " selected" : ""}" type="button"
+              data-tut-family="${option.predicate}" aria-pressed="${isSelected}" ${locked ? "disabled" : ""}>${content}</button>`;
+          }).join("")}
+        </div>
+      </section>
+      ${field ? `
+        <section class="simple-rule-step">
+          <div class="simple-step-heading"><span>2</span><strong>${field.predicate === "role" ? "Choose the type(s)" : "Choose the direction(s)"}</strong></div>
+          <div class="simple-value-grid">
+            ${simpleTutorialVisibleValues(field).map(value => {
+              const isSelected = selected.has(String(value.id));
+              const mark = field.predicate === "role"
+                ? `<span class="simple-role-swatch simple-type-swatch" style="--role-color:${SIMPLE_TYPE_COLOR}">${icon("robot", "simple-role-icon")}<span class="robot-type-letter simple-type-letter" aria-hidden="true">${simpleTypeLetter(value.id)}</span></span>`
+                : `<span class="simple-arrow-value">${value.symbol || value.id}</span>`;
+              return `<button class="simple-value-button tut-simple-value-button${isSelected ? " selected" : ""}" type="button"
+                data-tut-family="${field.predicate}" data-tut-value="${value.id}" aria-pressed="${isSelected}"
+                ${locked ? "disabled" : ""}>${mark}<span>${value.label}</span></button>`;
+            }).join("")}
+          </div>
+        </section>
+      ` : ""}
+      ${state.simpleValues.length ? `
+        <section class="simple-current-rule">
+          <span>CURRENT PRACTICE RULE</span>
+          <strong>${simpleTutorialRuleSentence()}</strong>
+        </section>
+      ` : ""}
+      ${page.id === "simple_practice_one" && state.simpleFamiliesSolved.length ? `
+        <div class="tut-family-progress" aria-label="Practice progress">
+          <span class="is-solved">✓ ${state.simpleFamiliesSolved.length === 2
+            ? "Both rule forms work"
+            : `${state.simpleFamiliesSolved[0] === "move_dir" ? "Movement" : "Robot type"} works`}</span>
+          ${state.simpleFamiliesSolved.length === 1 ? "<small>1 of 2 complete</small>" : ""}
+        </div>
+      ` : ""}
+      <p class="tut-simple-builder-help">${simpleBuilderHelp(page)}</p>
     </div>
-    <p class="tut-simple-rule-note">In this example, both rules identify Robot A. In the task, you choose one family first, then its values.</p>
   `;
+}
+
+function bindSimpleRuleBuilder(){
+  const page = PAGES[state.page];
+  const locked = page.id === "simple_practice_two" && !state.simpleCarryObserved;
+  if(locked) return;
+  document.querySelectorAll("#tut-rule-reference [data-tut-family]:not([data-tut-value])").forEach(button => {
+    button.onclick = () => {
+      const family = button.dataset.tutFamily;
+      if(state.simpleFamily === family) return;
+      const previousFamily = state.simpleFamily;
+      state.simpleFamily = family;
+      state.simpleValues = [];
+      state.simplePracticeOneSolved = false;
+      state.simplePracticeTwoSolved = false;
+      emit("tutorial_rule_family_changed", {previous_family:previousFamily, family});
+      resetCurrentScene();
+      renderReference("simple_builder");
+      updateContinueState();
+    };
+  });
+  document.querySelectorAll("#tut-rule-reference [data-tut-value]").forEach(button => {
+    button.onclick = () => {
+      const value = button.dataset.tutValue;
+      const selected = new Set(state.simpleValues.map(String));
+      if(selected.has(String(value))) selected.delete(String(value));
+      else selected.add(String(value));
+      const field = simpleTutorialField();
+      state.simpleValues = field.values
+        .filter(option => selected.has(String(option.id)))
+        .map(option => option.id);
+      if(page.id === "simple_practice_one"){
+        state.simpleFamiliesSolved = state.simpleFamiliesSolved.filter(family => family !== state.simpleFamily);
+      }
+      state.simplePracticeOneSolved = false;
+      state.simplePracticeTwoSolved = false;
+      emit("tutorial_rule_value_toggled", {
+        family:state.simpleFamily,
+        value,
+        selected:selected.has(String(value)),
+      });
+      resetCurrentScene();
+      renderReference("simple_builder");
+      updateContinueState();
+    };
+  });
 }
 
 const PRACTICE_TERMS = {
@@ -576,7 +918,16 @@ const PRACTICE_TERMS = {
 function updateContinueState(){
   const requirement = PAGES[state.page].requires;
   el("tut-continue").disabled =
-    (requirement === "practice_solved" && !state.practiceSolved);
+    (requirement === "practice_solved" && !state.practiceSolved) ||
+    (requirement === "collision_observed" && !state.simpleCollisionObserved) ||
+    (requirement === "simple_practice_one" && state.simpleFamiliesSolved.length < 2) ||
+    (requirement === "simple_practice_two" && !state.simplePracticeTwoSolved);
+  const run = el("tut-run");
+  const page = PAGES[state.page];
+  if(run){
+    run.disabled = (page.id === "simple_practice_one" || page.id === "simple_practice_two") &&
+      state.simpleValues.length === 0;
+  }
 }
 
 function bindRulePractice(){
@@ -671,11 +1022,11 @@ function libraryReferenceMarkup(){
     return `
       <div class="tut-library-instruction">
         <span>Optional</span>
-        <strong>Save the rule from the previous scene to make it available here, or start the task without saving it.</strong>
+        <strong>Save the rule from the previous task to make it available here, or start the task without saving it.</strong>
       </div>
       <div class="tut-library-demo">
         <section>
-          <h3>Rule from the previous scene</h3>
+          <h3>Rule from the previous task</h3>
           <div class="tut-library-rule">
             <div>${action}</div>
             <div><span>WHEN</span> ${text}</div>
@@ -693,12 +1044,12 @@ function libraryReferenceMarkup(){
     <div class="tut-library-instruction ${state.practiceUsed ? "is-complete" : ""}">
       <span>${state.practiceUsed ? "Added" : "Saved"}</span>
       <strong>${state.practiceUsed
-        ? "The saved rule is now in this scene's rulebook."
-        : "The rule remains in the library. Add it to this scene's rulebook if you want to test it here."}</strong>
+        ? "The saved rule is now in this task's rulebook."
+        : "The rule remains in the library. Add it to this task's rulebook if you want to test it here."}</strong>
     </div>
     <div class="tut-library-demo">
       <section>
-        <h3>Rules in this scene</h3>
+        <h3>Rules in this task</h3>
         ${state.practiceUsed ? `
           <div class="tut-library-rule">
             <div>${action}</div>
@@ -736,7 +1087,7 @@ function bindLibraryPractice(){
       state.reuseSolved = false;
       emit("tutorial_library_used", {condition:state.practiceCondition?.text || null});
       resetCurrentScene();
-      setFeedback(null, "The saved rule is active in this scene. Press Run to test it.");
+      setFeedback(null, "The saved rule is active in this task. Press Run to test it.");
       renderReference("library");
       updateContinueState();
     };
@@ -748,7 +1099,10 @@ function renderReference(kind){
   host.hidden = !kind;
   if(!kind) return;
   if(kind === "map") host.innerHTML = mapReferenceMarkup();
-  if(kind === "simple_rule") host.innerHTML = simpleRuleReferenceMarkup();
+  if(kind === "simple_builder"){
+    host.innerHTML = simpleRuleBuilderMarkup();
+    bindSimpleRuleBuilder();
+  }
   if(kind === "rule"){
     host.innerHTML = ruleReferenceMarkup();
     bindRulePractice();
@@ -780,6 +1134,106 @@ function recordPageVisit(){
   });
 }
 
+function hideOnboardingScreens(){
+  ["ethics-screen", "instructions-screen", "tutorial-screen"].forEach(id => {
+    const screen = el(id);
+    if(screen) screen.hidden = true;
+  });
+}
+
+function setOnboardingActive(active){
+  document.body.classList.toggle("tutorial-active", active);
+  const task = document.querySelector(".wrap");
+  if(active) task?.setAttribute("aria-hidden", "true");
+  else task?.removeAttribute("aria-hidden");
+}
+
+function renderInstructionStep(index){
+  instructionStep = Math.max(0, Math.min(index, INSTRUCTION_STEPS.length - 1));
+  const step = INSTRUCTION_STEPS[instructionStep];
+  el("instruction-step-label").textContent = step.label;
+  el("instruction-step-title").textContent = step.title;
+  el("instruction-step-lead").textContent = step.lead;
+  el("instruction-step-points").innerHTML = step.points.map(point => `<li>${point}</li>`).join("");
+  el("instruction-visual").innerHTML = step.visual();
+  el("instruction-progress-label").textContent = `${instructionStep + 1} of ${INSTRUCTION_STEPS.length}`;
+  el("instruction-progress-bar").style.width = `${((instructionStep + 1) / INSTRUCTION_STEPS.length) * 100}%`;
+  el("instruction-back").disabled = instructionStep === 0;
+  el("instruction-next").textContent = instructionStep === INSTRUCTION_STEPS.length - 1
+    ? instructionReviewMode ? "Return to task" : "Start tutorial"
+    : "Next";
+  el("instruction-dots").innerHTML = INSTRUCTION_STEPS.map((row, stepIndex) => {
+    const className = stepIndex === instructionStep ? "is-active" : stepIndex < instructionStep ? "is-complete" : "";
+    return `<span class="${className}"></span>`;
+  }).join("");
+  emit("instruction_step_viewed", {
+    instruction_step:instructionStep + 1,
+    instruction_step_id:step.label,
+    review:instructionReviewMode,
+  });
+}
+
+function closeInstructionReview(){
+  hideOnboardingScreens();
+  setOnboardingActive(false);
+  window.scrollTo(0, 0);
+  emit("instructions_closed", {review:true});
+}
+
+function beginInteractiveTutorial(){
+  hideOnboardingScreens();
+  setOnboardingActive(true);
+  const screen = el("tutorial-screen");
+  if(!screen){
+    finish();
+    return;
+  }
+  screen.hidden = false;
+  emit("interactive_tutorial_started", {page_count:PAGES.length});
+  renderPage(0);
+  el("tut-continue").focus();
+}
+
+function openInstructions(review=false){
+  instructionReviewMode = !!review;
+  instructionStep = 0;
+  hideOnboardingScreens();
+  setOnboardingActive(true);
+  const screen = el("instructions-screen");
+  if(!screen){
+    if(instructionReviewMode) closeInstructionReview();
+    else beginInteractiveTutorial();
+    return;
+  }
+  screen.hidden = false;
+  emit("instructions_opened", {review:instructionReviewMode});
+  renderInstructionStep(0);
+  el("instruction-next").focus();
+}
+
+function updateEthicsAgreement(){
+  const sheet = el("ethics-scroll");
+  const agree = el("ethics-agree");
+  if(!sheet || !agree) return;
+  const reachedBottom = sheet.scrollTop + sheet.clientHeight >= sheet.scrollHeight - 12;
+  agree.disabled = !reachedBottom;
+}
+
+function showEthicsScreen(){
+  hideOnboardingScreens();
+  setOnboardingActive(true);
+  const screen = el("ethics-screen");
+  if(!screen){
+    openInstructions(false);
+    return;
+  }
+  screen.hidden = false;
+  const sheet = el("ethics-scroll");
+  if(sheet) sheet.scrollTop = 0;
+  updateEthicsAgreement();
+  emit("participant_information_viewed", {ethics_reference:"979409"});
+}
+
 function renderPage(index){
   recordPageVisit();
   stopAnimation();
@@ -789,23 +1243,26 @@ function renderPage(index){
 
   el("tut-title").textContent = page.title;
   el("tut-lead").textContent = page.lead;
+  el("tut-points").hidden = page.points.length === 0;
   el("tut-points").innerHTML = page.points.map(point => `<li>${point}</li>`).join("");
 
   const visual = el("tut-visual");
   const ruleReference = el("tut-rule-reference");
+  const isRulePractice = page.id === "rules" || page.id === "library" ||
+    page.id === "simple_practice_one" || page.id === "simple_practice_two";
   document.querySelector(".tut-panel")?.classList.toggle(
     "has-rule-practice",
-    page.id === "rules" || page.id === "library",
+    isRulePractice,
   );
   document.querySelector(".tut-body")?.classList.toggle(
     "has-rule-practice",
-    page.id === "rules" || page.id === "library",
+    isRulePractice,
   );
   visual.hidden = !page.scene;
   ruleReference.hidden = !page.reference;
+  el("tut-controls").hidden = !page.scene || !page.controls;
 
   if(page.scene){
-    el("tut-controls").hidden = !page.controls;
     resetCurrentScene();
   }
   renderReference(page.reference);
@@ -839,15 +1296,21 @@ function completeTutorial(){
       library_saved:state.practiceSaved,
       library_used:state.practiceUsed,
       reuse_solved:state.reuseSolved,
+      simple_family:state.simpleFamily,
+      simple_values:state.simpleValues.slice(),
+      collision_observed:state.simpleCollisionObserved,
+      first_rule_solved:state.simplePracticeOneSolved,
+      families_solved:state.simpleFamiliesSolved.slice(),
+      carryover_observed:state.simpleCarryObserved,
+      carryover_rule_solved:state.simplePracticeTwoSolved,
     },
   };
   emit("tutorial_completed", {
     duration_ms:window.tutorialReport.duration_ms,
     run_count:state.runs.length,
   });
-  el("tutorial-screen").hidden = true;
-  document.body.classList.remove("tutorial-active");
-  document.querySelector(".wrap")?.removeAttribute("aria-hidden");
+  hideOnboardingScreens();
+  setOnboardingActive(false);
   finish();
 }
 
@@ -867,6 +1330,20 @@ function bind(){
     if(state.page === PAGES.length - 1) completeTutorial();
     else renderPage(state.page + 1);
   };
+  el("ethics-agree").onclick = () => {
+    emit("consent_agreed", {ethics_reference:"979409"});
+    openInstructions(false);
+  };
+  el("ethics-scroll").onscroll = updateEthicsAgreement;
+  el("instruction-back").onclick = () => renderInstructionStep(instructionStep - 1);
+  el("instruction-next").onclick = () => {
+    if(instructionStep < INSTRUCTION_STEPS.length - 1){
+      renderInstructionStep(instructionStep + 1);
+      return;
+    }
+    if(instructionReviewMode) closeInstructionReview();
+    else beginInteractiveTutorial();
+  };
 }
 
 function startTutorial(options={}, mode="standard"){
@@ -875,7 +1352,7 @@ function startTutorial(options={}, mode="standard"){
     emit = options.log || (() => {});
     finish = options.onComplete || (() => {});
     const screen = el("tutorial-screen");
-    if(!screen){
+    if(!screen || !el("instructions-screen")){
       finish();
       return;
     }
@@ -888,13 +1365,17 @@ function startTutorial(options={}, mode="standard"){
     state.practiceSaved = false;
     state.practiceUsed = false;
     state.reuseSolved = false;
-    document.body.classList.add("tutorial-active");
-    document.querySelector(".wrap")?.setAttribute("aria-hidden", "true");
-    screen.hidden = false;
+    state.simpleCollisionObserved = false;
+    state.simpleFamily = null;
+    state.simpleValues = [];
+    state.simpleFamiliesSolved = [];
+    state.simplePracticeOneSolved = false;
+    state.simpleCarryObserved = false;
+    state.simplePracticeTwoSolved = false;
     bind();
     emit("tutorial_started", {page_count:PAGES.length, tutorial_mode:tutorialMode});
-    renderPage(0);
-    el("tut-continue").focus();
+    if(mode === "simple") showEthicsScreen();
+    else beginInteractiveTutorial();
 }
 
 window.ResearchTutorial = {
@@ -903,6 +1384,9 @@ window.ResearchTutorial = {
   },
   startSimple(options={}){
     startTutorial(options, "simple");
+  },
+  showInstructions(options={}){
+    openInstructions(options.review !== false);
   },
 };
 

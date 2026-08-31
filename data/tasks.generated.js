@@ -1,15 +1,15 @@
 window.PARADIGM_LIBRARIES = {
   "ramp-carry": {
-    "experiment_version": 31,
+    "experiment_version": 32,
     "title": "Warehouse Conflict Rules",
-    "objective": "Make one shared waiting rule that lets every robot reach its lettered destination.",
+    "objective": "Make one shared waiting rule that lets every robot reach its assigned charging bay.",
     "condition": "carry",
     "schedule": "ramp",
     "world_rules": [
       "Robots follow their shortest route and move at the same time.",
       "When two robots try to enter the same square, the rule decides which robot waits.",
       "A movement direction is the robot's actual step toward that square.",
-      "A robot stops when it reaches the destination with the same letter.",
+      "Each robot follows its assigned route to a charging bay.",
       "One shared rule applies to every encounter on the map."
     ],
     "rule_schema": {
@@ -69,48 +69,48 @@ window.PARADIGM_LIBRARIES = {
         },
         {
           "id": "role",
-          "object": "Robot role",
+          "object": "Robot type",
           "predicate": "role",
           "values": [
             {
               "id": "carrier",
-              "label": "Carrier",
-              "short_label": "C"
+              "label": "Type A",
+              "short_label": "A"
             },
             {
               "id": "operator",
-              "label": "Operator",
-              "short_label": "O"
+              "label": "Type B",
+              "short_label": "B"
             },
             {
               "id": "inspector",
-              "label": "Inspector",
-              "short_label": "I"
+              "label": "Type C",
+              "short_label": "C"
             },
             {
               "id": "loader",
-              "label": "Loader",
-              "short_label": "L"
+              "label": "Type D",
+              "short_label": "D"
             },
             {
               "id": "technician",
-              "label": "Technician",
-              "short_label": "T"
+              "label": "Type E",
+              "short_label": "E"
             },
             {
               "id": "courier",
-              "label": "Courier",
-              "short_label": "Co"
+              "label": "Type F",
+              "short_label": "F"
             },
             {
               "id": "scout",
-              "label": "Scout",
-              "short_label": "S"
+              "label": "Type G",
+              "short_label": "G"
             },
             {
               "id": "guard",
-              "label": "Guard",
-              "short_label": "G"
+              "label": "Type H",
+              "short_label": "H"
             }
           ]
         }
@@ -127,76 +127,76 @@ window.PARADIGM_LIBRARIES = {
     ],
     "global_vocabulary": [
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "carrier",
         "negated": false,
-        "label": "Carrier",
-        "short_label": "C"
+        "label": "Type A",
+        "short_label": "A"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "operator",
         "negated": false,
-        "label": "Operator",
-        "short_label": "O"
+        "label": "Type B",
+        "short_label": "B"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "inspector",
         "negated": false,
-        "label": "Inspector",
-        "short_label": "I"
+        "label": "Type C",
+        "short_label": "C"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "loader",
         "negated": false,
-        "label": "Loader",
-        "short_label": "L"
+        "label": "Type D",
+        "short_label": "D"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "technician",
         "negated": false,
-        "label": "Technician",
-        "short_label": "T"
+        "label": "Type E",
+        "short_label": "E"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "courier",
         "negated": false,
-        "label": "Courier",
-        "short_label": "Co"
+        "label": "Type F",
+        "short_label": "F"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "scout",
         "negated": false,
-        "label": "Scout",
-        "short_label": "S"
+        "label": "Type G",
+        "short_label": "G"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "guard",
         "negated": false,
-        "label": "Guard",
-        "short_label": "G"
+        "label": "Type H",
+        "short_label": "H"
       },
       {
         "object": "Movement direction",
@@ -274,76 +274,76 @@ window.PARADIGM_LIBRARIES = {
     "action_condition_space": {
       "MOVE": [
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "carrier",
           "negated": false,
-          "label": "Carrier",
-          "short_label": "C"
+          "label": "Type A",
+          "short_label": "A"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "operator",
           "negated": false,
-          "label": "Operator",
-          "short_label": "O"
+          "label": "Type B",
+          "short_label": "B"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "inspector",
           "negated": false,
-          "label": "Inspector",
-          "short_label": "I"
+          "label": "Type C",
+          "short_label": "C"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "loader",
           "negated": false,
-          "label": "Loader",
-          "short_label": "L"
+          "label": "Type D",
+          "short_label": "D"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "technician",
           "negated": false,
-          "label": "Technician",
-          "short_label": "T"
+          "label": "Type E",
+          "short_label": "E"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "courier",
           "negated": false,
-          "label": "Courier",
-          "short_label": "Co"
+          "label": "Type F",
+          "short_label": "F"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "scout",
           "negated": false,
-          "label": "Scout",
-          "short_label": "S"
+          "label": "Type G",
+          "short_label": "G"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "guard",
           "negated": false,
-          "label": "Guard",
-          "short_label": "G"
+          "label": "Type H",
+          "short_label": "H"
         },
         {
           "object": "Movement direction",
@@ -31431,16 +31431,16 @@ window.PARADIGM_LIBRARIES = {
     "curriculum_prefixes": []
   },
   "ramp-fresh": {
-    "experiment_version": 31,
+    "experiment_version": 32,
     "title": "Warehouse Conflict Rules",
-    "objective": "Make one shared waiting rule that lets every robot reach its lettered destination.",
+    "objective": "Make one shared waiting rule that lets every robot reach its assigned charging bay.",
     "condition": "fresh",
     "schedule": "ramp",
     "world_rules": [
       "Robots follow their shortest route and move at the same time.",
       "When two robots try to enter the same square, the rule decides which robot waits.",
       "A movement direction is the robot's actual step toward that square.",
-      "A robot stops when it reaches the destination with the same letter.",
+      "Each robot follows its assigned route to a charging bay.",
       "One shared rule applies to every encounter on the map."
     ],
     "rule_schema": {
@@ -31500,48 +31500,48 @@ window.PARADIGM_LIBRARIES = {
         },
         {
           "id": "role",
-          "object": "Robot role",
+          "object": "Robot type",
           "predicate": "role",
           "values": [
             {
               "id": "carrier",
-              "label": "Carrier",
-              "short_label": "C"
+              "label": "Type A",
+              "short_label": "A"
             },
             {
               "id": "operator",
-              "label": "Operator",
-              "short_label": "O"
+              "label": "Type B",
+              "short_label": "B"
             },
             {
               "id": "inspector",
-              "label": "Inspector",
-              "short_label": "I"
+              "label": "Type C",
+              "short_label": "C"
             },
             {
               "id": "loader",
-              "label": "Loader",
-              "short_label": "L"
+              "label": "Type D",
+              "short_label": "D"
             },
             {
               "id": "technician",
-              "label": "Technician",
-              "short_label": "T"
+              "label": "Type E",
+              "short_label": "E"
             },
             {
               "id": "courier",
-              "label": "Courier",
-              "short_label": "Co"
+              "label": "Type F",
+              "short_label": "F"
             },
             {
               "id": "scout",
-              "label": "Scout",
-              "short_label": "S"
+              "label": "Type G",
+              "short_label": "G"
             },
             {
               "id": "guard",
-              "label": "Guard",
-              "short_label": "G"
+              "label": "Type H",
+              "short_label": "H"
             }
           ]
         }
@@ -31558,76 +31558,76 @@ window.PARADIGM_LIBRARIES = {
     ],
     "global_vocabulary": [
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "carrier",
         "negated": false,
-        "label": "Carrier",
-        "short_label": "C"
+        "label": "Type A",
+        "short_label": "A"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "operator",
         "negated": false,
-        "label": "Operator",
-        "short_label": "O"
+        "label": "Type B",
+        "short_label": "B"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "inspector",
         "negated": false,
-        "label": "Inspector",
-        "short_label": "I"
+        "label": "Type C",
+        "short_label": "C"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "loader",
         "negated": false,
-        "label": "Loader",
-        "short_label": "L"
+        "label": "Type D",
+        "short_label": "D"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "technician",
         "negated": false,
-        "label": "Technician",
-        "short_label": "T"
+        "label": "Type E",
+        "short_label": "E"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "courier",
         "negated": false,
-        "label": "Courier",
-        "short_label": "Co"
+        "label": "Type F",
+        "short_label": "F"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "scout",
         "negated": false,
-        "label": "Scout",
-        "short_label": "S"
+        "label": "Type G",
+        "short_label": "G"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "guard",
         "negated": false,
-        "label": "Guard",
-        "short_label": "G"
+        "label": "Type H",
+        "short_label": "H"
       },
       {
         "object": "Movement direction",
@@ -31705,76 +31705,76 @@ window.PARADIGM_LIBRARIES = {
     "action_condition_space": {
       "MOVE": [
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "carrier",
           "negated": false,
-          "label": "Carrier",
-          "short_label": "C"
+          "label": "Type A",
+          "short_label": "A"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "operator",
           "negated": false,
-          "label": "Operator",
-          "short_label": "O"
+          "label": "Type B",
+          "short_label": "B"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "inspector",
           "negated": false,
-          "label": "Inspector",
-          "short_label": "I"
+          "label": "Type C",
+          "short_label": "C"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "loader",
           "negated": false,
-          "label": "Loader",
-          "short_label": "L"
+          "label": "Type D",
+          "short_label": "D"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "technician",
           "negated": false,
-          "label": "Technician",
-          "short_label": "T"
+          "label": "Type E",
+          "short_label": "E"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "courier",
           "negated": false,
-          "label": "Courier",
-          "short_label": "Co"
+          "label": "Type F",
+          "short_label": "F"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "scout",
           "negated": false,
-          "label": "Scout",
-          "short_label": "S"
+          "label": "Type G",
+          "short_label": "G"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "guard",
           "negated": false,
-          "label": "Guard",
-          "short_label": "G"
+          "label": "Type H",
+          "short_label": "H"
         },
         {
           "object": "Movement direction",
@@ -62862,16 +62862,16 @@ window.PARADIGM_LIBRARIES = {
     "curriculum_prefixes": []
   },
   "cliff-carry": {
-    "experiment_version": 31,
+    "experiment_version": 32,
     "title": "Warehouse Conflict Rules",
-    "objective": "Make one shared waiting rule that lets every robot reach its lettered destination.",
+    "objective": "Make one shared waiting rule that lets every robot reach its assigned charging bay.",
     "condition": "carry",
     "schedule": "cliff",
     "world_rules": [
       "Robots follow their shortest route and move at the same time.",
       "When two robots try to enter the same square, the rule decides which robot waits.",
       "A movement direction is the robot's actual step toward that square.",
-      "A robot stops when it reaches the destination with the same letter.",
+      "Each robot follows its assigned route to a charging bay.",
       "One shared rule applies to every encounter on the map."
     ],
     "rule_schema": {
@@ -62931,48 +62931,48 @@ window.PARADIGM_LIBRARIES = {
         },
         {
           "id": "role",
-          "object": "Robot role",
+          "object": "Robot type",
           "predicate": "role",
           "values": [
             {
               "id": "carrier",
-              "label": "Carrier",
-              "short_label": "C"
+              "label": "Type A",
+              "short_label": "A"
             },
             {
               "id": "operator",
-              "label": "Operator",
-              "short_label": "O"
+              "label": "Type B",
+              "short_label": "B"
             },
             {
               "id": "inspector",
-              "label": "Inspector",
-              "short_label": "I"
+              "label": "Type C",
+              "short_label": "C"
             },
             {
               "id": "loader",
-              "label": "Loader",
-              "short_label": "L"
+              "label": "Type D",
+              "short_label": "D"
             },
             {
               "id": "technician",
-              "label": "Technician",
-              "short_label": "T"
+              "label": "Type E",
+              "short_label": "E"
             },
             {
               "id": "courier",
-              "label": "Courier",
-              "short_label": "Co"
+              "label": "Type F",
+              "short_label": "F"
             },
             {
               "id": "scout",
-              "label": "Scout",
-              "short_label": "S"
+              "label": "Type G",
+              "short_label": "G"
             },
             {
               "id": "guard",
-              "label": "Guard",
-              "short_label": "G"
+              "label": "Type H",
+              "short_label": "H"
             }
           ]
         }
@@ -62989,76 +62989,76 @@ window.PARADIGM_LIBRARIES = {
     ],
     "global_vocabulary": [
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "carrier",
         "negated": false,
-        "label": "Carrier",
-        "short_label": "C"
+        "label": "Type A",
+        "short_label": "A"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "operator",
         "negated": false,
-        "label": "Operator",
-        "short_label": "O"
+        "label": "Type B",
+        "short_label": "B"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "inspector",
         "negated": false,
-        "label": "Inspector",
-        "short_label": "I"
+        "label": "Type C",
+        "short_label": "C"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "loader",
         "negated": false,
-        "label": "Loader",
-        "short_label": "L"
+        "label": "Type D",
+        "short_label": "D"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "technician",
         "negated": false,
-        "label": "Technician",
-        "short_label": "T"
+        "label": "Type E",
+        "short_label": "E"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "courier",
         "negated": false,
-        "label": "Courier",
-        "short_label": "Co"
+        "label": "Type F",
+        "short_label": "F"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "scout",
         "negated": false,
-        "label": "Scout",
-        "short_label": "S"
+        "label": "Type G",
+        "short_label": "G"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "guard",
         "negated": false,
-        "label": "Guard",
-        "short_label": "G"
+        "label": "Type H",
+        "short_label": "H"
       },
       {
         "object": "Movement direction",
@@ -63136,76 +63136,76 @@ window.PARADIGM_LIBRARIES = {
     "action_condition_space": {
       "MOVE": [
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "carrier",
           "negated": false,
-          "label": "Carrier",
-          "short_label": "C"
+          "label": "Type A",
+          "short_label": "A"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "operator",
           "negated": false,
-          "label": "Operator",
-          "short_label": "O"
+          "label": "Type B",
+          "short_label": "B"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "inspector",
           "negated": false,
-          "label": "Inspector",
-          "short_label": "I"
+          "label": "Type C",
+          "short_label": "C"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "loader",
           "negated": false,
-          "label": "Loader",
-          "short_label": "L"
+          "label": "Type D",
+          "short_label": "D"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "technician",
           "negated": false,
-          "label": "Technician",
-          "short_label": "T"
+          "label": "Type E",
+          "short_label": "E"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "courier",
           "negated": false,
-          "label": "Courier",
-          "short_label": "Co"
+          "label": "Type F",
+          "short_label": "F"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "scout",
           "negated": false,
-          "label": "Scout",
-          "short_label": "S"
+          "label": "Type G",
+          "short_label": "G"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "guard",
           "negated": false,
-          "label": "Guard",
-          "short_label": "G"
+          "label": "Type H",
+          "short_label": "H"
         },
         {
           "object": "Movement direction",
@@ -94293,16 +94293,16 @@ window.PARADIGM_LIBRARIES = {
     "curriculum_prefixes": []
   },
   "cliff-fresh": {
-    "experiment_version": 31,
+    "experiment_version": 32,
     "title": "Warehouse Conflict Rules",
-    "objective": "Make one shared waiting rule that lets every robot reach its lettered destination.",
+    "objective": "Make one shared waiting rule that lets every robot reach its assigned charging bay.",
     "condition": "fresh",
     "schedule": "cliff",
     "world_rules": [
       "Robots follow their shortest route and move at the same time.",
       "When two robots try to enter the same square, the rule decides which robot waits.",
       "A movement direction is the robot's actual step toward that square.",
-      "A robot stops when it reaches the destination with the same letter.",
+      "Each robot follows its assigned route to a charging bay.",
       "One shared rule applies to every encounter on the map."
     ],
     "rule_schema": {
@@ -94362,48 +94362,48 @@ window.PARADIGM_LIBRARIES = {
         },
         {
           "id": "role",
-          "object": "Robot role",
+          "object": "Robot type",
           "predicate": "role",
           "values": [
             {
               "id": "carrier",
-              "label": "Carrier",
-              "short_label": "C"
+              "label": "Type A",
+              "short_label": "A"
             },
             {
               "id": "operator",
-              "label": "Operator",
-              "short_label": "O"
+              "label": "Type B",
+              "short_label": "B"
             },
             {
               "id": "inspector",
-              "label": "Inspector",
-              "short_label": "I"
+              "label": "Type C",
+              "short_label": "C"
             },
             {
               "id": "loader",
-              "label": "Loader",
-              "short_label": "L"
+              "label": "Type D",
+              "short_label": "D"
             },
             {
               "id": "technician",
-              "label": "Technician",
-              "short_label": "T"
+              "label": "Type E",
+              "short_label": "E"
             },
             {
               "id": "courier",
-              "label": "Courier",
-              "short_label": "Co"
+              "label": "Type F",
+              "short_label": "F"
             },
             {
               "id": "scout",
-              "label": "Scout",
-              "short_label": "S"
+              "label": "Type G",
+              "short_label": "G"
             },
             {
               "id": "guard",
-              "label": "Guard",
-              "short_label": "G"
+              "label": "Type H",
+              "short_label": "H"
             }
           ]
         }
@@ -94420,76 +94420,76 @@ window.PARADIGM_LIBRARIES = {
     ],
     "global_vocabulary": [
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "carrier",
         "negated": false,
-        "label": "Carrier",
-        "short_label": "C"
+        "label": "Type A",
+        "short_label": "A"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "operator",
         "negated": false,
-        "label": "Operator",
-        "short_label": "O"
+        "label": "Type B",
+        "short_label": "B"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "inspector",
         "negated": false,
-        "label": "Inspector",
-        "short_label": "I"
+        "label": "Type C",
+        "short_label": "C"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "loader",
         "negated": false,
-        "label": "Loader",
-        "short_label": "L"
+        "label": "Type D",
+        "short_label": "D"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "technician",
         "negated": false,
-        "label": "Technician",
-        "short_label": "T"
+        "label": "Type E",
+        "short_label": "E"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "courier",
         "negated": false,
-        "label": "Courier",
-        "short_label": "Co"
+        "label": "Type F",
+        "short_label": "F"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "scout",
         "negated": false,
-        "label": "Scout",
-        "short_label": "S"
+        "label": "Type G",
+        "short_label": "G"
       },
       {
-        "object": "Robot role",
+        "object": "Robot type",
         "property": "role",
         "predicate": "role",
         "value": "guard",
         "negated": false,
-        "label": "Guard",
-        "short_label": "G"
+        "label": "Type H",
+        "short_label": "H"
       },
       {
         "object": "Movement direction",
@@ -94567,76 +94567,76 @@ window.PARADIGM_LIBRARIES = {
     "action_condition_space": {
       "MOVE": [
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "carrier",
           "negated": false,
-          "label": "Carrier",
-          "short_label": "C"
+          "label": "Type A",
+          "short_label": "A"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "operator",
           "negated": false,
-          "label": "Operator",
-          "short_label": "O"
+          "label": "Type B",
+          "short_label": "B"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "inspector",
           "negated": false,
-          "label": "Inspector",
-          "short_label": "I"
+          "label": "Type C",
+          "short_label": "C"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "loader",
           "negated": false,
-          "label": "Loader",
-          "short_label": "L"
+          "label": "Type D",
+          "short_label": "D"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "technician",
           "negated": false,
-          "label": "Technician",
-          "short_label": "T"
+          "label": "Type E",
+          "short_label": "E"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "courier",
           "negated": false,
-          "label": "Courier",
-          "short_label": "Co"
+          "label": "Type F",
+          "short_label": "F"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "scout",
           "negated": false,
-          "label": "Scout",
-          "short_label": "S"
+          "label": "Type G",
+          "short_label": "G"
         },
         {
-          "object": "Robot role",
+          "object": "Robot type",
           "property": "role",
           "predicate": "role",
           "value": "guard",
           "negated": false,
-          "label": "Guard",
-          "short_label": "G"
+          "label": "Type H",
+          "short_label": "H"
         },
         {
           "object": "Movement direction",

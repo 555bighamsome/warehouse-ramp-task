@@ -51,14 +51,14 @@ const LABEL_ZH = {
 };
 
 const ROLE_ZH = {
-  carrier:"Carrier",
-  operator:"Operator",
-  inspector:"Inspector",
-  loader:"Loader",
-  technician:"Technician",
-  courier:"Courier",
-  scout:"Scout",
-  guard:"Guard",
+  carrier:"Type A",
+  operator:"Type B",
+  inspector:"Type C",
+  loader:"Type D",
+  technician:"Type E",
+  courier:"Type F",
+  scout:"Type G",
+  guard:"Type H",
   cleaner:"Cleaner",
 };
 const CARRY_ZH = { none:"none", spill:"spill", glass:"glass", valuable:"valuable item" };
@@ -421,6 +421,10 @@ function snapshot(scn, pos, event, meta={}){
       Object.prototype.hasOwnProperty.call(plans, id);
     const index = ptr[agent.id] ?? ptr[id] ?? 0;
     const done = hasPlan && index >= plan.length;
+    const nextMove = hasPlan && !done
+      ? plan.slice(index).find(step => step.kind === "move")
+      : null;
+    const currentIntent = intend[agent.id] || intend[id] || null;
     const blockedNow = blocked.has(agent.id) || blocked.has(id);
     const releasedNow = released.has(agent.id) || released.has(id);
     const failed = failedAgent === id || involved.has(id);
@@ -438,7 +442,8 @@ function snapshot(scn, pos, event, meta={}){
       step_index: hasPlan ? index : null,
       step_count: hasPlan ? plan.length : null,
       next_step: hasPlan && !done ? stepLabel(plan[index]) : "",
-      intent: intend[agent.id] || intend[id] || null,
+      intent: currentIntent,
+      display_dir:nextMove?.dir || currentIntent?.dir || null,
     };
   });
   return { pos:out, event:event || null, agents, tick:meta.tick ?? null };

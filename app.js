@@ -155,6 +155,7 @@ function icon(name, extraClass=""){
   if(name === "run") return `<svg ${base}><circle ${fill} cx="12" cy="12" r="10"/><path d="m10 7 7 5-7 5V7Z" fill="#fff"/></svg>`;
   if(name === "idle") return `<svg ${base}><circle ${stroke} cx="12" cy="12" r="9"/></svg>`;
   if(name === "target") return icon("reach", extraClass);
+  if(name === "charging") return `<svg ${base}><path ${stroke} d="M7 4h10v3h2v14H5V7h2V4Zm2 3h6V5H9v2Z"/><path ${fill} d="m13 9-4 6h3l-1 5 4-7h-3l1-4Z"/></svg>`;
   return `<svg ${base}><circle ${stroke} cx="12" cy="12" r="8"/></svg>`;
 }
 
@@ -178,6 +179,12 @@ function agentDisplayId(id){
   return label;
 }
 
+function agentTargetNumber(agent, task=scn){
+  const activeAgents = task?.agents?.filter(candidate => candidate.active) || [];
+  const index = activeAgents.findIndex(candidate => String(candidate.id) === String(agent.id));
+  return index >= 0 ? String(index + 1) : String(Number(agent.id) + 1);
+}
+
 function carryIcon(agent){
   return agent.carrying === "spill" ? icon("spill", "carry-icon") : "";
 }
@@ -199,14 +206,14 @@ function stateIconName(meta){
 }
 
 const ROLE_SHORT_ZH = {
-  carrier:"C",
-  operator:"O",
-  inspector:"I",
-  loader:"L",
-  technician:"T",
-  courier:"Co",
-  scout:"S",
-  guard:"G",
+  carrier:"A",
+  operator:"B",
+  inspector:"C",
+  loader:"D",
+  technician:"E",
+  courier:"F",
+  scout:"G",
+  guard:"H",
   cleaner:"Cl",
 };
 const MOVEMENT_ARROWS = {
@@ -217,13 +224,15 @@ const PROPERTY_LABELS = {
   target_type:"type",
   contested:"state",
   station_marker:"marker",
-  role:"role",
+  role:"type",
   carrying:"carrying",
   move_dir:"direction",
 };
 
+const SIMPLE_ROBOT_COLOR = "#2D70B3";
+
 function agentColor(agent){
-  return roleColor(agent.role);
+  return SIMPLE_FAMILY_RULE_LANGUAGE ? SIMPLE_ROBOT_COLOR : roleColor(agent.role);
 }
 
 const ROLE_COLORS = {
@@ -242,9 +251,20 @@ function roleColor(role){
   return ROLE_COLORS[role] || COL[5];
 }
 
+function robotTypeLetter(role){
+  return ROLE_SHORT_ZH[role] || "?";
+}
+
+function robotTypeMark(role, extraClass=""){
+  return `<span class="robot-type-letter ${extraClass}" aria-hidden="true">${robotTypeLetter(role)}</span>`;
+}
+
 function roleLegendAvatar(role, extraClass=""){
-  const mark = icon(roleIconName(role), "agent-avatar-icon");
-  return `<span class="agent-avatar role-key-avatar ${extraClass}" style="--agent-color:${roleColor(role)}">${mark}</span>`;
+  const mark = SIMPLE_FAMILY_RULE_LANGUAGE
+    ? `${icon("robot", "agent-avatar-icon")}${robotTypeMark(role, "agent-type-letter")}`
+    : icon(roleIconName(role), "agent-avatar-icon");
+  const color = SIMPLE_FAMILY_RULE_LANGUAGE ? SIMPLE_ROBOT_COLOR : roleColor(role);
+  return `<span class="agent-avatar role-key-avatar ${extraClass}" style="--agent-color:${color}">${mark}</span>`;
 }
 
 function passageMapSample(extraClass=""){
@@ -266,13 +286,22 @@ function zoneMarkup(zone){
 }
 
 function targetMarkup(agent, targetIndex=0, onMachine=false){
+  if(SIMPLE_FAMILY_RULE_LANGUAGE){
+    const corner = targetIndex % 4;
+    return `<span class="target-label target-label-corner-${corner}${onMachine ? ` target-label-on-machine target-label-machine-${corner}` : ""}">${agentTargetNumber(agent)}</span>`;
+  }
   const corner = targetIndex % 4;
   return `<span class="target-label target-label-corner-${corner}${onMachine ? ` target-label-on-machine target-label-machine-${corner}` : ""}">${agentDisplayId(agent.id)}</span>`;
 }
 
 function agentAvatar(agent, extraClass=""){
-  const mark = icon(roleIconName(agent.role), "agent-avatar-icon");
-  return `<span class="agent-avatar ${extraClass}" style="--agent-color:${agentColor(agent)}">${mark}<span class="agent-avatar-id">${agentDisplayId(agent.id)}</span></span>`;
+  const mark = SIMPLE_FAMILY_RULE_LANGUAGE
+    ? `${icon("robot", "agent-avatar-icon")}${robotTypeMark(agent.role, "agent-type-letter")}`
+    : icon(roleIconName(agent.role), "agent-avatar-icon");
+  const identity = SIMPLE_FAMILY_RULE_LANGUAGE
+    ? ""
+    : `<span class="agent-avatar-id">${agentDisplayId(agent.id)}</span>`;
+  return `<span class="agent-avatar ${extraClass}" style="--agent-color:${agentColor(agent)}">${mark}${identity}</span>`;
 }
 
 function spillIconBadge(agent, className=""){
@@ -281,15 +310,17 @@ function spillIconBadge(agent, className=""){
 }
 
 function displayedMovement(agent, meta=null){
-  return meta?.intent?.dir || agent.movementArrow || null;
+  return meta?.display_dir || meta?.intent?.dir || agent.movementArrow || null;
 }
 
 function robotMarkup(agent, meta){
   const movement = displayedMovement(agent, meta);
-  const identity = icon(roleIconName(agent.role), "robot-role");
+  const identity = SIMPLE_FAMILY_RULE_LANGUAGE
+    ? `${icon("robot", "robot-role")}${robotTypeMark(agent.role, "robot-type-mark")}`
+    : icon(roleIconName(agent.role), "robot-role");
   return [
     identity,
-    `<span class="robot-id">${agentDisplayId(agent.id)}</span>`,
+    `<span class="robot-id">${SIMPLE_FAMILY_RULE_LANGUAGE ? agentTargetNumber(agent) : agentDisplayId(agent.id)}</span>`,
     SIMPLE_FAMILY_RULE_LANGUAGE && movement
       ? `<span class="movement-arrow-badge" title="Movement direction ${MOVEMENT_ARROWS[movement] || movement}">${MOVEMENT_ARROWS[movement] || movement}</span>`
       : "",
@@ -419,8 +450,8 @@ function showSceneGuide(force=false){
   const newFeatures = sceneFeatureItems(scn);
   const backdrop = $("guide-backdrop");
   if(!backdrop || !newFeatures.length) return;
-  $("guide-kicker").textContent = `${scn.label} · Scene guide`;
-  $("guide-title").textContent = guide?.title || "New elements in this scene";
+  $("guide-kicker").textContent = `${scn.label} · Task guide`;
+  $("guide-title").textContent = guide?.title || "New elements in this task";
   $("guide-items").innerHTML = newFeatures.map(guideFeatureMarkup).join("");
   const body = $("guide-body");
   const example = $("guide-example");
@@ -476,10 +507,10 @@ function sceneFullMapMarkup(task){
           : "";
       const itemMarkup = items.map(item => `<span class="picker-item item-${item.colour}" aria-hidden="true"></span>`).join("");
       const targetMarkup = (targets.get(key) || []).map((agent, targetIndex) =>
-        `<span class="picker-target picker-target-${targetIndex % 4}${machines.has(key) ? ` picker-target-on-machine picker-target-on-machine-${targetIndex % 4}` : ""}" style="--agent-color:${agentColor(agent)}" aria-hidden="true"><span class="picker-target-label picker-target-label-${targetIndex % 4}">${agentDisplayId(agent.id)}</span></span>`
+        `<span class="picker-target picker-target-${targetIndex % 4}${machines.has(key) ? ` picker-target-on-machine picker-target-on-machine-${targetIndex % 4}` : ""}" style="--agent-color:${agentColor(agent)}" aria-hidden="true"><span class="picker-target-label picker-target-label-${targetIndex % 4}">${SIMPLE_FAMILY_RULE_LANGUAGE ? agentTargetNumber(agent, task) : agentDisplayId(agent.id)}</span></span>`
       ).join("");
       const agentMarkup = agents.map((agent, agentIndex) =>
-        `<span class="picker-agent ${agents.length > 1 ? "picker-agent-multi" : ""} picker-agent-index-${agentIndex}" style="--agent-color:${agentColor(agent)}" aria-hidden="true">${icon(roleIconName(agent.role), "picker-agent-icon")}<span class="picker-agent-id">${agentDisplayId(agent.id)}</span>${agent.goal?.kind === "operate" ? icon("machine", "picker-goal-badge") : ""}${agent.carrying === "spill" ? icon("spill", "picker-carry-icon") : ""}</span>`
+        `<span class="picker-agent ${agents.length > 1 ? "picker-agent-multi" : ""} picker-agent-index-${agentIndex}" style="--agent-color:${agentColor(agent)}" aria-hidden="true">${icon(roleIconName(agent.role), "picker-agent-icon")}<span class="picker-agent-id">${SIMPLE_FAMILY_RULE_LANGUAGE ? agentTargetNumber(agent, task) : agentDisplayId(agent.id)}</span>${SIMPLE_FAMILY_RULE_LANGUAGE ? robotTypeMark(agent.role, "picker-agent-type") : ""}${agent.goal?.kind === "operate" ? icon("machine", "picker-goal-badge") : ""}${agent.carrying === "spill" ? icon("spill", "picker-carry-icon") : ""}</span>`
       ).join("");
       const zoneMarkupText = !wall && zone === "cold" ? zoneMarkup("cold") : "";
       cells.push(`<span class="picker-map-cell ${wall ? "picker-map-wall" : `picker-map-${zone}${passage ? " picker-passage-square" : ""}`}" aria-hidden="true">${wall ? "" : zoneMarkupText + feature + itemMarkup + targetMarkup + agentMarkup}</span>`);
@@ -509,7 +540,7 @@ function renderScenePickerKey(){
       ? passageMapSample("picker-key-symbol")
       : `<span class="picker-key-symbol ${iconName}-symbol">${icon(iconName)}</span>`}<span>${label}</span></div>`
   ).join("");
-  key.innerHTML = `<strong>Map key</strong><div class="picker-key-group"><span class="picker-key-group-label">Robots</span>${roleTiles}</div><div class="picker-key-group"><span class="picker-key-group-label">Map</span><div class="picker-key-grid"><div class="picker-key-tile"><span class="picker-key-target"><span>0</span></span><span>Target</span></div>${environmentTiles}</div></div>`;
+  key.innerHTML = `<strong>Map key</strong><div class="picker-key-group"><span class="picker-key-group-label">Robot types</span>${roleTiles}</div><div class="picker-key-group"><span class="picker-key-group-label">Map</span><div class="picker-key-grid"><div class="picker-key-tile"><span class="picker-key-target"><span>${SIMPLE_FAMILY_RULE_LANGUAGE ? "1" : "0"}</span></span><span>${SIMPLE_FAMILY_RULE_LANGUAGE ? "Numbered charging bay" : "Target"}</span></div>${environmentTiles}</div></div>`;
 }
 
 function showScenePicker(){
@@ -622,7 +653,7 @@ function buildTabs(){
     button.innerHTML = `<span class="scene-number">${task.label}</span><span class="scene-mark" aria-hidden="true">${mark}</span>`;
     button.disabled = locked;
     button.title = locked
-      ? `${task.label}: complete the previous scene first`
+      ? `${task.label}: complete the previous task first`
       : !state.visited
       ? `${task.label}: not yet run`
       : state.lastOk === null
@@ -656,7 +687,7 @@ function buildTabs(){
 function renderSceneGoal(){
   const list = $("scene-goal-list");
   if(!list) return;
-  list.innerHTML = '<div class="goal-instruction">Move every robot to the matching letter. When two robots meet, exactly one must wait.</div>';
+  list.innerHTML = '<div class="goal-instruction">Let every robot reach its assigned charging bay. Whenever two routes meet, exactly one robot must wait.</div>';
 }
 
 function buildBoard(){
@@ -797,7 +828,9 @@ function buildBoard(){
     if(targetIsMachine){
       ring.classList.add("machine-target-ring");
     }
-    ring.setAttribute("aria-label", `Robot ${agentDisplayId(agent.id)} target: ${goalLabel(agent)}`);
+    ring.setAttribute("aria-label", SIMPLE_FAMILY_RULE_LANGUAGE
+      ? `Charging bay ${agentTargetNumber(agent)} for Robot ${agentTargetNumber(agent)}, ${ROLE_ZH[agent.role] || agent.role}`
+      : `Robot ${agentDisplayId(agent.id)} target: ${goalLabel(agent)}`);
     ring.innerHTML = targetMarkup(agent, targetIndex, targetIsMachine);
     board.appendChild(ring);
   });
@@ -813,7 +846,7 @@ function buildBoard(){
     robot.style.background = agentColor(agent);
     const movement = displayedMovement(agent);
     const identity = SIMPLE_FAMILY_RULE_LANGUAGE
-      ? `Robot ${agentDisplayId(agent.id)}, ${ROLE_ZH[agent.role] || agent.role}, movement ${MOVEMENT_ARROWS[movement] || movement}`
+      ? `Robot ${agentTargetNumber(agent)}, ${ROLE_ZH[agent.role] || agent.role}, movement ${MOVEMENT_ARROWS[movement] || movement}`
       : `Robot ${agentDisplayId(agent.id)}`;
     robot.setAttribute("aria-label", agent.active ? identity : `${identity}: off duty`);
     robot.innerHTML = robotMarkup(agent, null);
@@ -924,7 +957,9 @@ function renderFrame(frame){
     const identity = SIMPLE_FAMILY_RULE_LANGUAGE
       ? `${ROLE_ZH[agent.role] || agent.role}, movement ${MOVEMENT_ARROWS[movement] || movement}`
       : "";
-    el.setAttribute("aria-label", `Robot ${agentDisplayId(agent.id)}${identity ? `, ${identity}` : ""}: ${stateText(meta)}`);
+    el.setAttribute("aria-label", SIMPLE_FAMILY_RULE_LANGUAGE
+      ? `Robot ${agentTargetNumber(agent)}, ${identity}: ${stateText(meta)}`
+      : `Robot ${agentDisplayId(agent.id)}: ${stateText(meta)}`);
     el.innerHTML = robotMarkup(agent, meta);
     if(agent.goal?.kind === "operate"){
       if(released){
@@ -966,7 +1001,9 @@ function conditionText(cond){
   }
   if(cond.p === "role"){
     const role = ROLE_ZH[cond.v] || cond.v;
-    return `the robot's role is ${role}`;
+    return SIMPLE_FAMILY_RULE_LANGUAGE
+      ? `the robot is ${role}`
+      : `the robot's role is ${role}`;
   }
   if(cond.p === "carrying"){
     return "the robot is carrying a spill";
@@ -1112,7 +1149,7 @@ function useLibraryRule(entry){
       library_rule_id:entry.id,
       reason:"already_active",
     });
-    setStatus("This library rule is already active in the scene.", "");
+    setStatus("This library rule is already active in the task.", "");
     return;
   }
   const rule = cloneRule(entry.rule, entry.id);
@@ -1385,8 +1422,10 @@ function renderRuleMatchPreview(){
   });
 }
 
-function naturalOr(items){
-  return items.join(" OR ");
+function naturalList(items){
+  if(items.length < 2) return items[0] || "";
+  if(items.length === 2) return `${items[0]} or ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, or ${items[items.length - 1]}`;
 }
 
 function simpleRuleSentence(sourceRules=rules){
@@ -1394,9 +1433,15 @@ function simpleRuleSentence(sourceRules=rules){
   const values = simpleSelectedValues(sourceRules, family);
   if(!family || !values.length) return "No waiting rule yet.";
   if(family === "role"){
-    return `When robots meet, a robot whose role is ${naturalOr(values.map(value => value.label))} waits.`;
+    const types = naturalList(values.map(value => value.label));
+    return values.length === 1
+      ? `When two robots meet, the ${types} robot waits.`
+      : `When two robots meet, robots of ${types} wait.`;
   }
-  return `When robots meet, a robot moving ${naturalOr(values.map(value => value.symbol || MOVEMENT_ARROWS[value.id] || value.label))} waits.`;
+  const directions = naturalList(values.map(value => value.symbol || MOVEMENT_ARROWS[value.id] || value.label));
+  return values.length === 1
+    ? `When two robots meet, the robot moving ${directions} waits.`
+    : `When two robots meet, robots moving ${directions} wait.`;
 }
 
 function simpleCondition(field, value){
@@ -1503,7 +1548,7 @@ function renderSimpleRuleEditor(){
     button.className = `simple-family-button${selected ? " selected" : ""}`;
     button.setAttribute("aria-pressed", String(selected));
     button.innerHTML = field.predicate === "role"
-      ? `${icon("robot", "family-button-icon")}<span>Robot role</span>`
+      ? `${icon("robot", "family-button-icon")}<span>Robot type</span>`
       : '<span class="family-arrow-icon" aria-hidden="true">\u2197</span><span>Movement direction</span>';
     button.onclick = () => chooseSimpleFamily(field);
     familyButtons.appendChild(button);
@@ -1517,7 +1562,7 @@ function renderSimpleRuleEditor(){
     const valueStep = document.createElement("section");
     valueStep.className = "simple-rule-step";
     const valueHeading = simpleFamilySelection === "role"
-      ? "Choose the role(s)"
+      ? "Choose the type(s)"
       : "Choose the direction(s)";
     valueStep.innerHTML = `<div class="simple-step-heading"><span>2</span><strong>${valueHeading}</strong></div>`;
     const valueGrid = document.createElement("div");
@@ -1532,7 +1577,7 @@ function renderSimpleRuleEditor(){
       button.setAttribute("aria-pressed", String(selected));
       button.title = value.label;
       if(field.predicate === "role"){
-        button.innerHTML = `<span class="simple-role-swatch" style="--role-color:${roleColor(value.id)}">${icon("robot", "simple-role-icon")}</span><span>${value.label}</span>`;
+        button.innerHTML = `<span class="simple-role-swatch simple-type-swatch" style="--role-color:${SIMPLE_ROBOT_COLOR}">${icon("robot", "simple-role-icon")}${robotTypeMark(value.id, "simple-type-letter")}</span><span>${value.label}</span>`;
       }else{
         button.innerHTML = `<span class="simple-arrow-value">${value.symbol || MOVEMENT_ARROWS[value.id] || value.id}</span><span>${value.label}</span>`;
       }
@@ -1615,7 +1660,7 @@ function renderRules(){
     save.textContent = "Save to library";
     if(!rule.conds.length) save.classList.add("needs-condition");
     save.title = rule.conds.length
-      ? "Save this rule for reuse in another scene"
+      ? "Save this rule for reuse in another task"
       : "Add a complete condition before saving";
     save.onclick = () => saveRuleToLibrary(rule, sourceIndex);
     actions.appendChild(save);
@@ -1707,10 +1752,24 @@ function renderRules(){
 
 function renderLegend(){
   const activeAgents = scn.agents.filter(agent => agent.active);
-  const robotTiles = activeAgents.map(agent => {
+  const legendAgents = SIMPLE_FAMILY_RULE_LANGUAGE
+    ? [...new Map(activeAgents.map(agent => [agent.role, agent])).values()]
+    : activeAgents;
+  const robotTiles = legendAgents.map(agent => {
     const symbol = agentAvatar(agent, "legend-robot-avatar");
-    return `<div class="legend-tile robot-identity-tile" data-agent-id="${agent.id}">${symbol}<span class="legend-copy"><strong>Robot ${agentDisplayId(agent.id)}</strong><small>${ROLE_ZH[agent.role] || agent.role}</small></span></div>`;
+    return SIMPLE_FAMILY_RULE_LANGUAGE
+      ? `<div class="legend-tile robot-identity-tile" data-robot-type="${agent.role}">${symbol}<span class="legend-copy"><strong>${ROLE_ZH[agent.role] || agent.role}</strong><small>Robot type</small></span></div>`
+      : `<div class="legend-tile robot-identity-tile" data-agent-id="${agent.id}">${symbol}<span class="legend-copy"><strong>Robot ${agentDisplayId(agent.id)}</strong><small>${ROLE_ZH[agent.role] || agent.role}</small></span></div>`;
   }).join("");
+
+  const chargingTile = SIMPLE_FAMILY_RULE_LANGUAGE
+    ? legendTile(
+        '<span class="legend-target-sample" style="--agent-color:#2d70b3"><span>1</span></span>',
+        "Numbered charging bay",
+        "Robot 1 goes to Bay 1",
+        "charging-bay-tile",
+      )
+    : "";
 
   const markerTiles = [...new Set(Object.values(scn.machines).map(machine => machine.marker || "plain"))]
     .map(marker => legendTile(
@@ -1727,7 +1786,8 @@ function renderLegend(){
         "passage-tile",
       )
     : "";
-  $("legend").innerHTML = `<section class="map-key compact-map-key" aria-labelledby="map-key-title"><h3 class="map-key-title" id="map-key-title">Key</h3><div class="legend-grid essential-key">${robotTiles}${passageTile}${markerTiles.join("")}</div></section>`;
+  const legend = $("legend");
+  if(legend) legend.innerHTML = `<section class="map-key compact-map-key" aria-labelledby="map-key-title"><h3 class="map-key-title" id="map-key-title">Key</h3><div class="legend-grid essential-key">${robotTiles}${chargingTile}${passageTile}${markerTiles.join("")}</div></section>`;
   const conditionLines = RULE_SCHEMA.map(object => {
     const fields = object.properties.map(property =>
       `${property.label}: ${property.values.map(value => value.label).join(" / ")}`
@@ -1816,6 +1876,10 @@ function feedbackCellType(cell){
 }
 
 function feedbackAgent(id){
+  if(SIMPLE_FAMILY_RULE_LANGUAGE){
+    const agent = scn.agents.find(row => String(row.id) === String(id));
+    return `Robot ${agentTargetNumber(agent)} (${ROLE_ZH[agent?.role] || agent?.role || "unknown type"})`;
+  }
   return `Robot ${agentDisplayId(id)}`;
 }
 
@@ -1834,9 +1898,8 @@ function feedbackMove(id, frame){
   const agent = scn.agents.find(row => String(row.id) === String(id));
   const direction = frame?.agents?.[String(id)]?.intent?.dir || agent?.movementArrow;
   if(!direction) return feedbackAgent(id);
-  const role = SIMPLE_FAMILY_RULE_LANGUAGE ? ROLE_ZH[agent?.role] || agent?.role : null;
   return SIMPLE_FAMILY_RULE_LANGUAGE
-    ? `${feedbackAgent(id)} (${role}, ${FEEDBACK_DIRECTIONS[direction] || direction})`
+    ? `${feedbackAgent(id)} (${FEEDBACK_DIRECTIONS[direction] || direction})`
     : `${feedbackAgent(id)} moving ${FEEDBACK_DIRECTIONS[direction] || direction}`;
 }
 
@@ -1899,7 +1962,9 @@ function buildRunFeedback(result){
   if(result.ok){
     return {
       title:"Success",
-      observation:"Every robot reached its matching letter.",
+      observation:SIMPLE_FAMILY_RULE_LANGUAGE
+        ? "Every robot reached its assigned charging bay."
+        : "Every robot reached its matching target.",
       kind:"ok",
     };
   }
@@ -2171,7 +2236,7 @@ function play(trigger="manual"){
     const newlyUnlocked = unlockedTasks().filter(task => !availableBefore.has(task.id));
     if(newlyUnlocked.length){
       result.curriculumMessage =
-        `Scene complete. Available next: ${newlyUnlocked.map(task => task.label).join(", ")}.`;
+        `Task complete. Available next: ${newlyUnlocked.map(task => task.label).join(", ")}.`;
       newlyUnlocked.forEach(task => recordRuleEvent("shift_unlocked", {
         unlocked_shift_id:task.id,
         unlocked_shift_index:TASKS.indexOf(task),
@@ -2339,6 +2404,11 @@ if(!TASKS.length){
   };
   $("prev").onclick = () => showFrameAt(frameIndex - 1);
   $("next").onclick = () => showFrameAt(frameIndex + 1);
+  const taskInstructions = $("task-instructions");
+  if(taskInstructions){
+    taskInstructions.hidden = !SIMPLE_FAMILY_RULE_LANGUAGE;
+    taskInstructions.onclick = () => window.ResearchTutorial?.showInstructions?.({review:true});
+  }
   $("guide-close").onclick = closeSceneGuide;
   $("guide-backdrop").onclick = event => {
     if(event.target.id === "guide-backdrop") closeSceneGuide();
