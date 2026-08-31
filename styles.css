@@ -3025,6 +3025,16 @@ body.tutorial-active{overflow:hidden;}
   font-size:12px;
   font-weight:800;
 }
+.simple-selection-hint{
+  margin:-3px 0 10px 33px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.35;
+}
+.tut-simple-builder .simple-selection-hint{
+  margin:-2px 0 10px 33px;
+  font-size:14px;
+}
 .simple-family-buttons{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -3268,6 +3278,14 @@ button.btn.primary:hover,
 .onboarding-progress-track{background:#dededb;}
 .onboarding-progress-track span{background:var(--accent);}
 .tut-board-frame{border-color:#d5d5d2;background:#fff;}
+
+/* The formal map stands on its own; it does not need a surrounding frame. */
+#app .scene-visual > .board-frame{
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  padding:0;
+}
 .tut-feedback{border-bottom-color:var(--line);}
 .tut-lead,.tut-points,.tut-feedback span{color:var(--muted);}
 .onboarding-step-dots span{background:#dededb;}

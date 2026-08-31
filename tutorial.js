@@ -790,9 +790,9 @@ function simpleBuilderHelp(page){
     return "Update the selected values, then run again.";
   }
   if(page.id === "simple_practice_one" && !state.simpleFamily){
-    return "Choose Movement direction or Robot type.";
+    return "Run without a waiting rule, or choose Movement direction or Robot type.";
   }
-  if(!state.simpleValues.length) return "Select at least one value.";
+  if(!state.simpleValues.length) return "No values selected. You can still run the task.";
   if(page.id === "simple_practice_one" && state.simpleFamiliesSolved.length === 1){
     const remaining = state.simpleFamiliesSolved[0] === "role" ? "Movement direction" : "Robot type";
     return `That works. Now switch to ${remaining} and solve it again.`;
@@ -831,6 +831,7 @@ function simpleRuleBuilderMarkup(){
       ${field ? `
         <section class="simple-rule-step">
           <div class="simple-step-heading"><span>2</span><strong>${field.predicate === "role" ? "Choose the type(s)" : "Choose the direction(s)"}</strong></div>
+          <p class="simple-selection-hint">Click to select. Click again to remove.</p>
           <div class="simple-value-grid">
             ${simpleTutorialVisibleValues(field).map(value => {
               const isSelected = selected.has(String(value.id));
@@ -923,11 +924,7 @@ function updateContinueState(){
     (requirement === "simple_practice_one" && state.simpleFamiliesSolved.length < 2) ||
     (requirement === "simple_practice_two" && !state.simplePracticeTwoSolved);
   const run = el("tut-run");
-  const page = PAGES[state.page];
-  if(run){
-    run.disabled = (page.id === "simple_practice_one" || page.id === "simple_practice_two") &&
-      state.simpleValues.length === 0;
-  }
+  if(run) run.disabled = false;
 }
 
 function bindRulePractice(){
@@ -1386,9 +1383,6 @@ window.ResearchTutorial = {
   },
   startSimple(options={}){
     startTutorial(options, "simple");
-  },
-  showInstructions(options={}){
-    openInstructions(options.review !== false);
   },
 };
 

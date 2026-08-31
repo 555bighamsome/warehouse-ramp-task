@@ -1467,7 +1467,7 @@ function resetRunAfterRuleEdit(){
   setStatus(
     simpleSelectedValues().length
       ? "Rule changed. Run it to test."
-      : "Choose one or more values.",
+      : "No values selected. Run to see what happens without a waiting rule.",
     "",
   );
 }
@@ -1564,7 +1564,7 @@ function renderSimpleRuleEditor(){
     const valueHeading = simpleFamilySelection === "role"
       ? "Choose the type(s)"
       : "Choose the direction(s)";
-    valueStep.innerHTML = `<div class="simple-step-heading"><span>2</span><strong>${valueHeading}</strong></div>`;
+    valueStep.innerHTML = `<div class="simple-step-heading"><span>2</span><strong>${valueHeading}</strong></div><p class="simple-selection-hint">Click to select. Click again to remove.</p>`;
     const valueGrid = document.createElement("div");
     valueGrid.className = "simple-value-grid";
     field.values.forEach(value => {
@@ -1599,7 +1599,7 @@ function renderSimpleRuleEditor(){
   const count = $("rule-count");
   if(count) count.textContent = `${simpleSelectedValues().length} values`;
   const runButton = $("run");
-  if(runButton) runButton.disabled = selectedValues.size === 0;
+  if(runButton) runButton.disabled = false;
   renderRuleMatchPreview();
   buildTabs();
 }
@@ -2353,7 +2353,7 @@ function startTaskAfterTutorial(){
   if(scn.starter_rulebook?.length){
     setStatus("A starter rule is set. The outlined robot matches it. Run the rule.", "");
   }else if(SIMPLE_FAMILY_RULE_LANGUAGE && !simpleSelectedValues().length){
-    setStatus("Choose what the rule uses to begin.", "");
+    setStatus("No waiting rule is selected. Run to see what happens, or choose a rule.", "");
   }
   if(shouldAutoShowGuide(scn)){
     setTimeout(() => showSceneGuide(), 0);
@@ -2404,11 +2404,6 @@ if(!TASKS.length){
   };
   $("prev").onclick = () => showFrameAt(frameIndex - 1);
   $("next").onclick = () => showFrameAt(frameIndex + 1);
-  const taskInstructions = $("task-instructions");
-  if(taskInstructions){
-    taskInstructions.hidden = !SIMPLE_FAMILY_RULE_LANGUAGE;
-    taskInstructions.onclick = () => window.ResearchTutorial?.showInstructions?.({review:true});
-  }
   $("guide-close").onclick = closeSceneGuide;
   $("guide-backdrop").onclick = event => {
     if(event.target.id === "guide-backdrop") closeSceneGuide();
