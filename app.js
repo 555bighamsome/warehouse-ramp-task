@@ -28,7 +28,8 @@ const $ = id => document.getElementById(id);
 const URL_PARAMS = new URLSearchParams(window.location.search);
 const DEBUG_UI = URL_PARAMS.get("debug") === "1" ||
   window.location.hash.includes("debug");
-const SKIP_TUTORIAL = URL_PARAMS.get("skipTutorial") === "1";
+const ONBOARDING_STAGE = (URL_PARAMS.get("stage") || "").toLowerCase();
+const SKIP_TUTORIAL = URL_PARAMS.get("skipTutorial") === "1" || ONBOARDING_STAGE === "task";
 // The experimental task is sequential by default. Designers can inspect every
 // scene with ?order=free or ?skipTutorial=1 without changing the participant flow.
 const ORDER_MODE = DEBUG_UI
@@ -2384,6 +2385,7 @@ function initializeTutorial(){
     window.ResearchTutorial.startSimple({
       log:recordRuleEvent,
       onComplete:startTaskAfterTutorial,
+      startAt:ONBOARDING_STAGE,
     });
     return;
   }

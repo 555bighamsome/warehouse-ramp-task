@@ -21,6 +21,18 @@ const SIMPLE_TYPE_LETTERS = {
   scout:"G",
   guard:"H",
 };
+const INSTRUCTION_IMAGE_PATHS = [
+  "assets/instructions/map-overview.png?v=32",
+  "assets/instructions/robot-badges.png?v=32",
+  "assets/instructions/rule-editor.png?v=32",
+];
+
+function preloadInstructionImages(){
+  INSTRUCTION_IMAGE_PATHS.forEach(src => {
+    const image = new Image();
+    image.src = src;
+  });
+}
 
 function simpleTypeLetter(role){
   return SIMPLE_TYPE_LETTERS[role] || "?";
@@ -309,19 +321,17 @@ const SIMPLE_PAGES = [
   {
     id:"simple_encounter",
     title:"The first conflict",
-    lead:"Both robots are trying to enter the same square at the same time. Press Run to see the collision.",
-    points:[
-      "To avoid a collision, choose which robot waits. The other robot moves first, and the waiting robot follows.",
-    ],
+    lead:"Press Run. Both robots will try to enter the same square.",
+    points:[],
     scene:SIMPLE_CONFLICT_SCENE,
     controls:true,
-    initialNote:"No waiting rule is active.",
+    initialNote:"",
     requires:"collision_observed",
   },
   {
     id:"simple_practice_one",
     title:"Choose who waits",
-    lead:"Make one rule using Movement direction, then another using Robot type. Both should let the robots pass safely.",
+    lead:"Solve the conflict once with Movement direction and once with Robot type.",
     points:[],
     scene:SIMPLE_CONFLICT_SCENE,
     controls:true,
@@ -334,11 +344,10 @@ const INSTRUCTION_STEPS = [
   {
     label:"Step 1 · Goal",
     title:"Guide every robot to its charging bay",
-    lead:"The robots follow their routes automatically. You decide how they coordinate when their routes cross.",
+    lead:"The number on each robot matches its charging bay.",
     points:[
-      "The number on a robot matches the number on its charging bay.",
-      "You do not steer the robots. Press Run to test the waiting rule you have written.",
-      "You complete the task when every robot reaches its own charging bay.",
+      "The robots move automatically.",
+      "Press Run to test your waiting rule.",
     ],
     visual:() => `
       <figure class="instruction-screenshot">
@@ -348,11 +357,10 @@ const INSTRUCTION_STEPS = [
   {
     label:"Step 2 · Robot information",
     title:"Each robot shows two different features",
-    lead:"The letter and arrow describe different things. Both are always visible on the robot.",
+    lead:"The letter and arrow describe different things.",
     points:[
-      "Robot type is the letter badge. It stays with that robot throughout the task.",
-      "Movement direction is the arrow badge. It shows the direction the robot is currently moving and can change as the route turns.",
-      "The number is only used to match the robot to its charging bay.",
+      "Robot type is the letter. It stays with the robot.",
+      "Movement direction is the arrow. It shows which direction the robot will move next.",
     ],
     visual:() => `
       <figure class="instruction-screenshot is-robot-detail">
@@ -360,34 +368,12 @@ const INSTRUCTION_STEPS = [
       </figure>`,
   },
   {
-    label:"Step 3 · Crossing",
-    title:"",
-    lead:"Sometimes two robots reach the same square at the same time. Without a waiting rule, they cannot both continue.",
+    label:"Step 3 · Waiting rule",
+    title:"Choose who waits",
+    lead:"When two robots try to enter the same square, your rule decides which robot waits.",
     points:[
-      "If two robots try to enter the same square, choose which one should wait.",
-      "The other robot moves first. The waiting robot continues after it has passed.",
-      "Your rule applies every time two robots meet on the map.",
-    ],
-    visual:() => `
-      <figure class="instruction-screenshot-pair">
-        <div>
-          <strong>No waiting rule</strong>
-          <img src="assets/instructions/approaching-crossing.png?v=32" alt="Two tutorial robots about to enter the same square without a waiting rule.">
-        </div>
-        <div>
-          <strong>One robot waits</strong>
-          <img src="assets/instructions/wait-at-crossing.png?v=32" alt="One tutorial robot waiting while the other enters the crossing.">
-        </div>
-      </figure>`,
-  },
-  {
-    label:"Step 4 · Waiting rule",
-    title:"Write one rule and test it",
-    lead:"Choose which feature the rule uses, then choose the values that identify the robot that should wait.",
-    points:[
-      "Choose either Movement direction or Robot type.",
-      "You can choose one or more arrows or types. A robot waits if it has any one of your choices.",
-      "Run the rule, inspect what happened, and change it if needed.",
+      "Choose Movement direction or Robot type, then select one or more values.",
+      "The matching robot waits while the other moves first.",
       "Your rule stays on screen in the next task. You can keep it or change it.",
     ],
     visual:() => `
@@ -554,20 +540,19 @@ function ruleReuseResult(){
 
 function feedbackEntry(result){
   if(result.ok){
-    const steps = Math.max(0, result.frames.length - 1);
     return {
       kind:"ok",
       title:"That worked!",
       text:tutorialMode === "simple"
-        ? `Every robot reached its assigned charging bay in ${steps} steps.`
-        : `Every robot reached its destination in ${steps} steps.`,
+        ? "The robots reached their charging bays."
+        : "Every robot reached its destination.",
     };
   }
   if(result.reason === "timeout" && tutorialMode === "simple"){
     return {
       kind:"bad",
       title:"Both robots are being told to wait",
-      text:"At one encounter, both robots match the rule. Change the selected values so exactly one of them waits.",
+      text:"Choose a rule that matches only one robot.",
     };
   }
   if(result.reason === "collision"){
@@ -581,7 +566,7 @@ function feedbackEntry(result){
     return {
       kind:"bad",
       title:"They met at the same time",
-      text:`${names || "The robots"} both tried to enter the same square. Look at the move just before they met and decide who should wait.`,
+      text:`${names || "The robots"} tried to enter the same square. Choose one to wait.`,
     };
   }
   if(result.reason === "practice_marked"){
@@ -797,16 +782,14 @@ function simpleBuilderHelp(page){
   if(page.id === "simple_practice_two" && state.simpleCarryObserved && !state.simplePracticeTwoSolved){
     return "Update the selected values, then run again.";
   }
-  if(page.id === "simple_practice_one" && !state.simpleFamily){
-    return "Run without a waiting rule, or choose Movement direction or Robot type.";
-  }
-  if(!state.simpleValues.length) return "No values selected. You can still run the task.";
+  if(page.id === "simple_practice_one" && !state.simpleFamily) return "";
+  if(!state.simpleValues.length) return "";
   if(page.id === "simple_practice_one" && state.simpleFamiliesSolved.length === 1){
     const remaining = state.simpleFamiliesSolved[0] === "role" ? "Movement direction" : "Robot type";
-    return `That works. Now switch to ${remaining} and solve it again.`;
+    return `Now solve it with ${remaining}.`;
   }
   if(page.id === "simple_practice_one" && state.simpleFamiliesSolved.length === 2){
-    return "Both rule forms work. Continue.";
+    return "Done. Continue.";
   }
   if(page.id === "simple_practice_two" && state.simplePracticeTwoSolved){
     return "This shared rule handles both crossings.";
@@ -839,7 +822,6 @@ function simpleRuleBuilderMarkup(){
       ${field ? `
         <section class="simple-rule-step">
           <div class="simple-step-heading"><span>2</span><strong>${field.predicate === "role" ? "Choose the type(s)" : "Choose the direction(s)"}</strong></div>
-          <p class="simple-selection-hint">Click to select. Click again to remove.</p>
           <div class="simple-value-grid">
             ${simpleTutorialVisibleValues(field).map(value => {
               const isSelected = selected.has(String(value.id));
@@ -855,17 +837,8 @@ function simpleRuleBuilderMarkup(){
       ` : ""}
       ${state.simpleValues.length ? `
         <section class="simple-current-rule">
-          <span>CURRENT PRACTICE RULE</span>
           <strong>${simpleTutorialRuleSentence()}</strong>
         </section>
-      ` : ""}
-      ${page.id === "simple_practice_one" && state.simpleFamiliesSolved.length ? `
-        <div class="tut-family-progress" aria-label="Practice progress">
-          <span class="is-solved">✓ ${state.simpleFamiliesSolved.length === 2
-            ? "Both rule forms work"
-            : `${state.simpleFamiliesSolved[0] === "move_dir" ? "Movement" : "Robot type"} works`}</span>
-          ${state.simpleFamiliesSolved.length === 1 ? "<small>1 of 2 complete</small>" : ""}
-        </div>
       ` : ""}
       <p class="tut-simple-builder-help">${simpleBuilderHelp(page)}</p>
     </div>
@@ -1332,16 +1305,12 @@ function updateComprehensionState(){
   const responses = comprehensionResponses();
   const answered = Object.values(responses).filter(Boolean).length;
   el("comprehension-check").disabled = answered !== Object.keys(COMPREHENSION_ANSWERS).length;
-  el("comprehension-status").textContent = answered === Object.keys(COMPREHENSION_ANSWERS).length
-    ? "All four questions answered."
-    : `Answer all four questions. ${answered} of 4 answered.`;
 }
 
 function resetComprehension(){
   el("comprehension-form").reset();
-  el("comprehension-form").hidden = false;
+  el("comprehension-questions").hidden = false;
   el("comprehension-result").hidden = true;
-  el("comprehension-check").hidden = false;
   el("comprehension-retry").hidden = true;
   el("comprehension-start").hidden = true;
   updateComprehensionState();
@@ -1378,10 +1347,8 @@ function checkComprehension(){
   window.tutorialReport?.comprehension_attempts.push(record);
   emit("comprehension_submitted", record);
 
-  el("comprehension-form").hidden = true;
+  el("comprehension-questions").hidden = true;
   el("comprehension-result").hidden = false;
-  el("comprehension-check").hidden = true;
-  el("comprehension-status").textContent = "";
   el("comprehension-result-title").textContent = passed ? "You are ready" : "Please try again";
   el("comprehension-result-copy").textContent = passed
     ? "All four answers are correct."
@@ -1462,10 +1429,33 @@ function startTutorial(options={}, mode="standard"){
     state.simpleCarryObserved = false;
     state.simplePracticeTwoSolved = false;
     comprehensionAttempt = 0;
+    preloadInstructionImages();
     bind();
     emit("tutorial_started", {page_count:PAGES.length, tutorial_mode:tutorialMode});
-    if(mode === "simple") showEthicsScreen();
-    else beginInteractiveTutorial();
+    if(mode !== "simple"){
+      beginInteractiveTutorial();
+      return;
+    }
+    if(options.startAt === "instructions"){
+      openInstructions(false);
+      return;
+    }
+    if(options.startAt === "tutorial"){
+      beginInteractiveTutorial();
+      return;
+    }
+    if(options.startAt === "comprehension"){
+      window.tutorialReport = {
+        duration_ms:0,
+        page_visits:[],
+        runs:[],
+        practice:{},
+        comprehension_attempts:[],
+      };
+      showComprehension();
+      return;
+    }
+    showEthicsScreen();
 }
 
 window.ResearchTutorial = {

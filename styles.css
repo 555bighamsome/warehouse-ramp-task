@@ -3225,7 +3225,7 @@ body.tutorial-active{overflow:hidden;}
 body{background:var(--bg);color:var(--text);}
 .wrap{background:var(--surface);}
 .scene-panel,.rules-panel{background:var(--surface);}
-.rules-panel{border-left-color:var(--line2);}
+.rules-panel{border-left:0;}
 .board-frame{border-color:var(--line2);background:#fbfefd;}
 .cell:not(.wall){border-color:#d8e2df;background:#fffdf8;}
 .cell.wall,
@@ -3293,60 +3293,78 @@ button.btn.primary:hover,
 .onboarding-step-dots span.is-complete{background:var(--accent);}
 .tut-family-progress span.is-solved{border-color:#83bea9;background:#e5f5ee;color:var(--ok);}
 
-/* A plain, readable gate between the tutorial and the formal task. */
-.comprehension-shell{
-  max-width:920px;
-  border:0;
-  box-shadow:none;
+/* Comprehension layout follows the plain Pattern Builder check. */
+#comprehension-screen{background:#f4f4f4;}
+.comprehension-page{
+  width:min(900px,calc(100% - 32px));
+  margin:auto;
+  padding:32px 0;
+  color:#4c4c4c;
 }
-.comprehension-count{
-  color:var(--muted);
-  font-size:16px;
-  font-weight:700;
+.comprehension-page h1{
+  margin:0 0 24px;
+  color:#000;
+  font-size:32px;
 }
-.comprehension-form{
-  padding:8px 32px 28px;
-  overflow:auto;
+.comprehension-frame{
+  padding:32px 48px;
+  border-radius:8px;
+  background:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
 .comprehension-question{
   display:grid;
-  gap:9px;
+  gap:7px;
   margin:0;
-  padding:24px 0;
+  padding:0 0 28px;
   border:0;
-  border-bottom:1px solid var(--line);
 }
-.comprehension-question:last-child{border-bottom:0;}
+.comprehension-question:last-child{padding-bottom:0;}
 .comprehension-question legend{
   width:100%;
-  margin-bottom:7px;
-  color:var(--text);
-  font-size:18px;
-  font-weight:750;
+  margin-bottom:4px;
+  color:#4c4c4c;
+  font-size:17px;
+  font-weight:600;
   line-height:1.4;
 }
 .comprehension-option{
   display:flex;
   align-items:flex-start;
   gap:12px;
-  padding:5px 0;
-  color:var(--text);
+  padding:3px 0 3px 24px;
+  color:#4c4c4c;
   font-size:16px;
-  line-height:1.4;
+  line-height:1.6;
   cursor:pointer;
 }
 .comprehension-option:hover,
-.comprehension-option:has(input:checked){color:var(--accent);}
+.comprehension-option:has(input:checked){color:#4c4c4c;}
 .comprehension-option input{
-  width:18px;
-  height:18px;
-  margin:2px 0 0;
+  width:16px;
+  height:16px;
+  margin:4px 0 0;
   flex:0 0 auto;
-  accent-color:var(--accent);
 }
+.comprehension-button-group{
+  display:flex;
+  justify-content:center;
+  margin:32px 0;
+}
+.comprehension-button{
+  padding:14px 48px;
+  border:0;
+  border-radius:8px;
+  background:#2563eb;
+  color:#fff;
+  font:600 20px/1.2 inherit;
+  cursor:pointer;
+}
+.comprehension-button:hover{background:#1d4ed8;}
+.comprehension-button:disabled{background:#9ca3af;cursor:not-allowed;}
 .comprehension-result{
   margin:auto;
-  padding:64px 32px;
+  padding:80px 24px;
   text-align:center;
 }
 .comprehension-result h2{
@@ -3358,24 +3376,11 @@ button.btn.primary:hover,
   color:var(--muted);
   font-size:18px;
 }
-.comprehension-footer{
-  gap:20px;
-  justify-content:space-between;
-}
-.comprehension-status{
-  color:var(--muted);
-  font-size:15px;
-}
-.comprehension-actions{
-  display:flex;
-  gap:10px;
-  margin-left:auto;
-}
 @media (max-width:700px){
-  .comprehension-form{padding:4px 18px 22px;}
+  .comprehension-page{width:min(100% - 24px,900px);padding:24px 0;}
+  .comprehension-page h1{font-size:27px;}
+  .comprehension-frame{padding:24px 20px;}
   .comprehension-question legend{font-size:17px;}
   .comprehension-option{font-size:15px;}
-  .comprehension-footer{align-items:stretch;flex-direction:column;}
-  .comprehension-actions{width:100%;margin-left:0;}
-  .comprehension-actions .tutorial-nav-button{width:100%;}
+  .comprehension-button{width:100%;}
 }

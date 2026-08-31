@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Coordination Rules</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="styles.css?v=role-movement-v41">
+<link rel="stylesheet" href="styles.css?v=role-movement-v42">
 </head>
 <body>
 <div class="onboarding-screen" id="ethics-screen" hidden>
@@ -108,7 +108,7 @@
         <div class="onboarding-kicker">Instructions</div>
       </div>
       <div class="onboarding-progress" aria-live="polite">
-        <span id="instruction-progress-label">1 of 4</span>
+        <span id="instruction-progress-label">1 of 3</span>
         <div class="onboarding-progress-track" aria-hidden="true">
           <span id="instruction-progress-bar"></span>
         </div>
@@ -184,16 +184,10 @@
 </div>
 
 <div class="onboarding-screen" id="comprehension-screen" hidden>
-  <main class="onboarding-shell comprehension-shell" aria-labelledby="comprehension-title">
-    <header class="onboarding-header">
-      <div>
-        <div class="onboarding-kicker">Before the task</div>
-        <h1 id="comprehension-title">Check your understanding</h1>
-      </div>
-      <div class="comprehension-count">4 questions</div>
-    </header>
-
-    <form class="comprehension-form" id="comprehension-form">
+  <main class="comprehension-page" aria-labelledby="comprehension-title">
+    <section id="comprehension-questions">
+      <h1 id="comprehension-title">Comprehension Questions</h1>
+      <form class="comprehension-form comprehension-frame" id="comprehension-form">
       <fieldset class="comprehension-question">
         <legend>1. What completes a task?</legend>
         <label class="comprehension-option"><input type="radio" name="check1" value="a"><span>One robot reaches any charging bay.</span></label>
@@ -225,21 +219,21 @@
         <label class="comprehension-option"><input type="radio" name="check4" value="c"><span>It can no longer be edited.</span></label>
         <label class="comprehension-option"><input type="radio" name="check4" value="d"><span>It stays selected and is used on the new map.</span></label>
       </fieldset>
-    </form>
+      </form>
+
+      <div class="comprehension-button-group">
+        <button class="comprehension-button" id="comprehension-check" type="button" disabled>Check</button>
+      </div>
+    </section>
 
     <section class="comprehension-result" id="comprehension-result" hidden aria-live="polite">
       <h2 id="comprehension-result-title"></h2>
       <p id="comprehension-result-copy"></p>
-    </section>
-
-    <footer class="onboarding-footer comprehension-footer">
-      <span class="comprehension-status" id="comprehension-status">Answer all four questions.</span>
-      <div class="comprehension-actions">
-        <button class="tutorial-nav-button primary" id="comprehension-check" type="button" disabled>Check answers</button>
-        <button class="tutorial-nav-button secondary" id="comprehension-retry" type="button" hidden>Try again</button>
-        <button class="tutorial-nav-button primary" id="comprehension-start" type="button" hidden>Start task</button>
+      <div class="comprehension-button-group">
+        <button class="comprehension-button" id="comprehension-retry" type="button" hidden>Try again</button>
+        <button class="comprehension-button" id="comprehension-start" type="button" hidden>Start task</button>
       </div>
-    </footer>
+    </section>
   </main>
 </div>
 
@@ -335,9 +329,9 @@
   </section>
 </div>
 
-<script src="data/tasks.generated.js?v=role-movement-v41"></script>
-<script src="engine.js?v=role-movement-v41"></script>
-<script src="tutorial.js?v=role-movement-v41"></script>
-<script src="app.js?v=role-movement-v41"></script>
+<script src="data/tasks.generated.js?v=role-movement-v42"></script>
+<script src="engine.js?v=role-movement-v42"></script>
+<script src="tutorial.js?v=role-movement-v42"></script>
+<script src="app.js?v=role-movement-v42"></script>
 </body>
 </html>
