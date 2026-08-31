@@ -350,8 +350,19 @@ const INSTRUCTION_STEPS = [
       "Press Run to test your waiting rule.",
     ],
     visual:() => `
-      <figure class="instruction-screenshot">
-        <img src="assets/instructions/map-overview.png?v=32" alt="A tutorial practice map showing two robots, their routes, and numbered charging bays.">
+      <figure class="instruction-screenshot instruction-map-annotated">
+        <div class="instruction-map-image">
+          <img src="assets/instructions/map-overview.png?v=32" alt="A tutorial practice map showing two robots, their routes, and numbered charging bays.">
+          <svg class="instruction-map-arrows" viewBox="0 0 100 100" aria-hidden="true">
+            <defs>
+              <marker id="instruction-red-arrow" markerWidth="7" markerHeight="7" refX="5.2" refY="3.5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L7,3.5 L0,7 Z"></path>
+              </marker>
+            </defs>
+            <path class="instruction-map-arrow-path" d="M 22 53 C 39 51, 51 43, 62 35"></path>
+            <path class="instruction-map-arrow-path" d="M 56 82 C 70 69, 76 42, 80 22"></path>
+          </svg>
+        </div>
       </figure>`,
   },
   {

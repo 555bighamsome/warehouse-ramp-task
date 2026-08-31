@@ -1899,6 +1899,33 @@ body.tutorial-active{overflow:hidden;}
   border:0;
   background:transparent;
 }
+.instruction-map-image{
+  position:relative;
+  width:min(315px,100%);
+  aspect-ratio:1;
+}
+.instruction-map-image img{
+  width:100%;
+  height:100%;
+  max-height:none;
+}
+.instruction-map-arrows{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:visible;
+  pointer-events:none;
+}
+.instruction-map-arrow-path{
+  fill:none;
+  stroke:#d12727;
+  stroke-width:1.6;
+  stroke-linecap:round;
+  marker-end:url(#instruction-red-arrow);
+  filter:drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff);
+}
+.instruction-map-arrows marker path{fill:#d12727;}
 .instruction-screenshot.is-robot-detail img{width:210px;max-height:210px;image-rendering:auto;}
 .instruction-screenshot.is-editor img{max-height:390px;}
 .instruction-screenshot-pair{
